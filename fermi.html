@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>COSM0S — The Fermi Paradox</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    .fermi-hero-visual {
+      text-align: center;
+      margin: 2rem 0 3rem;
+      position: relative;
+    }
+    #fermiCanvas { border-radius: 4px; border: 1px solid var(--border); max-width: 100%; }
+
+    .drake-equation {
+      background: var(--dim);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 2rem;
+      margin-bottom: 3rem;
+      overflow-x: auto;
+    }
+    .drake-title {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.6rem;
+      letter-spacing: 0.25em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 1.2rem;
+    }
+    .drake-formula {
+      font-family: 'Space Mono', monospace;
+      font-size: clamp(0.8rem, 2vw, 1.2rem);
+      color: #fff;
+      white-space: nowrap;
+      margin-bottom: 1.2rem;
+      letter-spacing: 0.05em;
+    }
+    .drake-formula .var { color: var(--accent); }
+    .drake-formula .op { color: var(--muted); }
+    .drake-terms {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.8rem;
+    }
+    .drake-term {
+      background: rgba(0,0,0,0.3);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 0.5rem 0.8rem;
+      font-family: 'Space Mono', monospace;
+    }
+    .drake-term .sym { font-size: 0.75rem; color: var(--accent); }
+    .drake-term .def { font-size: 0.58rem; color: var(--muted); margin-top: 0.2rem; letter-spacing: 0.05em; }
+
+    .solutions-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px,1fr));
+      gap: 1rem;
+      margin-bottom: 3rem;
+    }
+    .solution-card {
+      background: var(--dim);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 1.5rem;
+      position: relative;
+      transition: all 0.2s;
+      overflow: hidden;
+    }
+    .solution-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top right, var(--sc) 0%, transparent 70%);
+      opacity: 0.05;
+      transition: opacity 0.3s;
+    }
+    .solution-card:hover::before { opacity: 0.12; }
+    .solution-card:hover { border-color: var(--sc); }
+    .solution-number {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 3rem;
+      color: rgba(255,255,255,0.04);
+      position: absolute;
+      top: 0.5rem;
+      right: 1rem;
+      line-height: 1;
+    }
+    .solution-emoji { font-size: 1.8rem; margin-bottom: 0.8rem; display: block; }
+    .solution-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.4rem;
+      letter-spacing: 0.06em;
+      color: #fff;
+      margin-bottom: 0.4rem;
+    }
+    .solution-subtitle {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.55rem;
+      letter-spacing: 0.2em;
+      color: var(--sc);
+      text-transform: uppercase;
+      margin-bottom: 0.8rem;
+    }
+    .solution-desc { font-size: 0.8rem; color: var(--muted); line-height: 1.65; }
+    .solution-scary {
+      margin-top: 0.8rem;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.62rem;
+      color: var(--sc);
+      padding: 0.5rem 0.7rem;
+      background: rgba(0,0,0,0.3);
+      border-radius: 2px;
+      letter-spacing: 0.08em;
+    }
+
+    .great-silence {
+      text-align: center;
+      padding: 3rem 2rem;
+      margin-top: 2rem;
+      background: radial-gradient(circle, rgba(155,114,255,0.08) 0%, transparent 70%);
+      border: 1px solid rgba(155,114,255,0.15);
+      border-radius: 3px;
+    }
+    .great-silence h2 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(2rem,5vw,4rem);
+      letter-spacing: 0.1em;
+      color: var(--purple);
+      margin-bottom: 1rem;
+    }
+    .great-silence p {
+      max-width: 560px;
+      margin: 0 auto;
+      color: var(--muted);
+      line-height: 1.8;
+      font-size: 0.9rem;
+    }
+
+    .signal-meter {
+      margin-top: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+    }
+    .signal-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    .signal-bars {
+      display: flex;
+      gap: 3px;
+      align-items: flex-end;
+      height: 24px;
+    }
+    .signal-bar {
+      width: 4px;
+      background: var(--warn);
+      border-radius: 1px;
+      opacity: 0.3;
+      animation: barPulse 1.5s ease-in-out infinite;
+    }
+    @keyframes barPulse {
+      0%,100% { opacity: 0.15; }
+      50% { opacity: 0.5; }
+    }
+    .signal-bar:nth-child(1) { height: 8px; animation-delay:0s; }
+    .signal-bar:nth-child(2) { height: 14px; animation-delay:0.2s; }
+    .signal-bar:nth-child(3) { height: 20px; animation-delay:0.4s; }
+    .signal-bar:nth-child(4) { height: 14px; animation-delay:0.6s; }
+    .signal-bar:nth-child(5) { height: 8px; animation-delay:0.8s; }
+    .signal-text {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--warn);
+      letter-spacing: 0.1em;
+    }
+  </style>
+</head>
+<body>
+<canvas class="bg-canvas" id="bg"></canvas>
+<nav class="content-layer">
+  <a href="dashboard.html" class="nav-logo">COSM0S</a>
+  <ul class="nav-links">
+    <li><a href="planets.html">Weight</a></li>
+    <li><a href="scale.html">Scale</a></li>
+    <li><a href="galaxy-map.html">Galaxies</a></li>
+    <li><a href="exoplanets.html">Exoplanets</a></li>
+    <li><a href="fermi.html" class="active">Fermi</a></li>
+    <li><a href="alien.html">Aliens</a></li>
+  </ul>
+</nav>
+
+<div class="page-wrap content-layer">
+  <div class="fade-up">
+    <div class="section-eyebrow">// EXISTENTIAL CRISIS MODULE — LOADED SUCCESSFULLY</div>
+    <h1 class="section-title">THE FERMI<br>PARADOX</h1>
+    <p class="section-sub">In 1950, physicist Enrico Fermi asked: <em>"Where is everybody?"</em> The universe is 13.8 billion years old. There should be thousands of alien civilizations. So... where the heck are they?</p>
+  </div>
+
+  <div class="fermi-hero-visual fade-up-2">
+    <canvas id="fermiCanvas" width="800" height="300"></canvas>
+  </div>
+
+  <div class="drake-equation fade-up-2">
+    <div class="drake-title">// DRAKE EQUATION — ESTIMATING COMMUNICABLE CIVILIZATIONS</div>
+    <div class="drake-formula">
+      <span class="var">N</span>
+      <span class="op"> = </span>
+      <span class="var">R★</span>
+      <span class="op"> × </span>
+      <span class="var">fp</span>
+      <span class="op"> × </span>
+      <span class="var">ne</span>
+      <span class="op"> × </span>
+      <span class="var">fl</span>
+      <span class="op"> × </span>
+      <span class="var">fi</span>
+      <span class="op"> × </span>
+      <span class="var">fc</span>
+      <span class="op"> × </span>
+      <span class="var">L</span>
+    </div>
+    <div class="drake-terms">
+      <div class="drake-term"><div class="sym">N</div><div class="def">CIVILIZATIONS WE COULD DETECT</div></div>
+      <div class="drake-term"><div class="sym">R★</div><div class="def">STAR FORMATION RATE (~3/yr)</div></div>
+      <div class="drake-term"><div class="sym">fp</div><div class="def">FRACTION WITH PLANETS (~1.0)</div></div>
+      <div class="drake-term"><div class="sym">ne</div><div class="def">HABITABLE PLANETS PER STAR</div></div>
+      <div class="drake-term"><div class="sym">fl</div><div class="def">FRACTION WHERE LIFE STARTS</div></div>
+      <div class="drake-term"><div class="sym">fi</div><div class="def">FRACTION BECOMING INTELLIGENT</div></div>
+      <div class="drake-term"><div class="sym">fc</div><div class="def">FRACTION THAT COMMUNICATES</div></div>
+      <div class="drake-term"><div class="sym">L</div><div class="def">YEARS A CIVILIZATION TRANSMITS</div></div>
+    </div>
+  </div>
+
+  <div style="font-family:'Bebas Neue',sans-serif;font-size:1.8rem;letter-spacing:0.06em;color:#fff;margin-bottom:1.5rem;" class="fade-up-2">PROPOSED SOLUTIONS TO THE GREAT SILENCE</div>
+
+  <div class="solutions-grid fade-up-3">
+    <div class="solution-card" style="--sc:#ff4d6d">
+      <span class="solution-number">01</span>
+      <span class="solution-emoji">💀</span>
+      <div class="solution-title">The Great Filter</div>
+      <div class="solution-subtitle">Existential Risk Hypothesis</div>
+      <div class="solution-desc">Some catastrophic barrier prevents civilizations from advancing. The scary question: is the filter behind us (we already survived it) or ahead of us (we haven't hit it yet)?</div>
+      <div class="solution-scary">⚠ IF THE FILTER IS AHEAD, WE'RE DOOMED</div>
+    </div>
+    <div class="solution-card" style="--sc:#9b72ff">
+      <span class="solution-number">02</span>
+      <span class="solution-emoji">🌍</span>
+      <div class="solution-title">The Rare Earth Hypothesis</div>
+      <div class="solution-subtitle">We Are Statistically Exceptional</div>
+      <div class="solution-desc">Earth is so uniquely perfect — right star, right moon, right location in galaxy, right Jupiter blocking asteroids — that complex life is astonishingly rare. We might be genuinely alone.</div>
+      <div class="solution-scary">🧬 THE ODDS OF YOU EXISTING ARE 1 IN 10⁴⁰⁰</div>
+    </div>
+    <div class="solution-card" style="--sc:#ffd166">
+      <span class="solution-number">03</span>
+      <span class="solution-emoji">🔇</span>
+      <div class="solution-title">The Zoo Hypothesis</div>
+      <div class="solution-subtitle">We're Being Watched Deliberately</div>
+      <div class="solution-desc">Advanced civilizations know about us but choose not to interfere, like a nature reserve. They watch us fumble with climate change and Twitter from a respectful distance.</div>
+      <div class="solution-scary">👁 THEY'RE LAUGHING AT US RIGHT NOW</div>
+    </div>
+    <div class="solution-card" style="--sc:#00ffe7">
+      <span class="solution-number">04</span>
+      <span class="solution-emoji">📡</span>
+      <div class="solution-title">They're Signaling, We Can't Hear</div>
+      <div class="solution-subtitle">Communication Gap Hypothesis</div>
+      <div class="solution-desc">Advanced civilizations use physics we haven't discovered. Neutrino beams, gravitational waves, quantum entanglement. We're listening on AM radio while they're on WiFi 6.</div>
+      <div class="solution-scary">📻 WE SEARCHED 0.001% OF THE GALAXY</div>
+    </div>
+    <div class="solution-card" style="--sc:#06d6a0">
+      <span class="solution-number">05</span>
+      <span class="solution-emoji">🤫</span>
+      <div class="solution-title">The Dark Forest Theory</div>
+      <div class="solution-subtitle">Silence as Survival Strategy</div>
+      <div class="solution-desc">Every civilization hides because revealing your location means death. The universe is a dark forest where hunters walk silently. Any civilization that broadcasts gets eliminated.</div>
+      <div class="solution-scary">📢 WE'VE BEEN BROADCASTING SINCE 1930</div>
+    </div>
+    <div class="solution-card" style="--sc:#ff9f1c">
+      <span class="solution-number">06</span>
+      <span class="solution-emoji">🕐</span>
+      <div class="solution-title">Temporal Displacement</div>
+      <div class="solution-subtitle">Wrong Time, Wrong Place</div>
+      <div class="solution-desc">We evolved too early or too late. Most civilizations died before radio. Future ones haven't emerged yet. The universe is 13.8B years old — we're a blip in cosmic time.</div>
+      <div class="solution-scary">🕰 HUMANS HAVE EXISTED 0.00001% OF COSMIC TIME</div>
+    </div>
+  </div>
+
+  <div class="great-silence fade-up-3">
+    <h2>THE GREAT SILENCE</h2>
+    <p>We have been listening for extraterrestrial signals since 1960. In 60+ years of searching, we've received exactly one unexplained signal — the WOW! signal of 1977. It has never repeated. The universe is 13.8 billion years old. There should be 10,000+ detectable civilizations in the Milky Way. The silence is either deeply reassuring or deeply terrifying.</p>
+    <div class="signal-meter">
+      <span class="signal-label">SETI SCAN</span>
+      <div class="signal-bars">
+        <div class="signal-bar"></div>
+        <div class="signal-bar"></div>
+        <div class="signal-bar"></div>
+        <div class="signal-bar"></div>
+        <div class="signal-bar"></div>
+      </div>
+      <span class="signal-text">NO SIGNAL DETECTED</span>
+    </div>
+  </div>
+</div>
+
+<script>
+// Fermi visualization canvas
+const fc = document.getElementById('fermiCanvas');
+const fctx = fc.getContext('2d');
+fc.width = fc.parentElement.clientWidth || 800;
+const FW = fc.width, FH = fc.height;
+
+// Simulate civilizations appearing and dying
+const civs = Array.from({length:80}, () => ({
+  x: Math.random()*FW*0.9 + FW*0.05,
+  y: Math.random()*FH*0.8 + FH*0.1,
+  born: Math.random() * 600,
+  life: Math.random() * 80 + 20,
+  r: Math.random() * 3 + 1.5,
+  color: ['#ffd166','#9b72ff','#00ffe7','#ff4d6d','#06d6a0'][Math.floor(Math.random()*5)]
+}));
+
+let ft = 0;
+function drawFermi() {
+  ft += 0.5;
+  fctx.clearRect(0,0,FW,FH);
+  // bg
+  const grd = fctx.createLinearGradient(0,0,FW,0);
+  grd.addColorStop(0,'#020408'); grd.addColorStop(1,'#060d1a');
+  fctx.fillStyle=grd; fctx.fillRect(0,0,FW,FH);
+  // Background grid lines (timeline)
+  fctx.strokeStyle='rgba(100,150,200,0.06)'; fctx.lineWidth=1;
+  for(let i=0;i<10;i++){
+    fctx.beginPath(); fctx.moveTo(i*FW/10,0); fctx.lineTo(i*FW/10,FH); fctx.stroke();
+  }
+  // BG stars
+  for(let i=0;i<120;i++){
+    const sx=(i*1973+7)%FW, sy=(i*431+13)%FH;
+    fctx.beginPath(); fctx.arc(sx,sy,0.5,0,Math.PI*2);
+    fctx.fillStyle=`rgba(200,220,255,${0.1+Math.sin(ft*0.02+i)*0.1})`; fctx.fill();
+  }
+  // Civilizations
+  let alive = 0;
+  civs.forEach(c => {
+    const age = (ft - c.born) % 700;
+    if(age < 0) return;
+    const phase = age / c.life;
+    if(phase > 1) return;
+    alive++;
+    const alpha = phase < 0.1 ? phase/0.1 : phase > 0.8 ? (1-phase)/0.2 : 1;
+    // Glow
+    const grd2 = fctx.createRadialGradient(c.x,c.y,0,c.x,c.y,c.r*4);
+    grd2.addColorStop(0,c.color+'66'); grd2.addColorStop(1,'transparent');
+    fctx.globalAlpha = alpha * 0.5;
+    fctx.beginPath(); fctx.arc(c.x,c.y,c.r*4,0,Math.PI*2); fctx.fillStyle=grd2; fctx.fill();
+    // Core
+    fctx.globalAlpha = alpha;
+    fctx.beginPath(); fctx.arc(c.x,c.y,c.r,0,Math.PI*2);
+    fctx.fillStyle=c.color; fctx.fill();
+    // Expanding signal ring
+    const ring = (age/c.life) * c.r * 8;
+    fctx.globalAlpha = alpha * 0.2;
+    fctx.beginPath(); fctx.arc(c.x,c.y,ring,0,Math.PI*2);
+    fctx.strokeStyle=c.color; fctx.lineWidth=0.5; fctx.stroke();
+    fctx.globalAlpha = 1;
+  });
+  // Labels
+  fctx.fillStyle='rgba(180,210,255,0.6)';
+  fctx.font='10px Space Mono,monospace'; fctx.textAlign='left';
+  fctx.fillText(`${alive} CIVILIZATIONS CURRENTLY TRANSMITTING`, 14, FH-14);
+  fctx.textAlign='right';
+  fctx.fillText('COSMIC TIME →', FW-14, FH-14);
+  // Our marker
+  const ourX = FW * 0.85, ourY = FH * 0.55;
+  fctx.beginPath(); fctx.arc(ourX,ourY,4,0,Math.PI*2);
+  fctx.fillStyle='#00ffe7'; fctx.globalAlpha=0.6+Math.sin(ft*0.1)*0.3; fctx.fill();
+  fctx.globalAlpha=1;
+  fctx.fillStyle='#00ffe7'; fctx.font='9px Space Mono,monospace'; fctx.textAlign='right';
+  fctx.fillText('← US', ourX-8, ourY+3);
+
+  requestAnimationFrame(drawFermi);
+}
+drawFermi();
+
+// BG stars
+const bgC=document.getElementById('bg'),bgX=bgC.getContext('2d');let bst=[];
+function brsz(){bgC.width=innerWidth;bgC.height=innerHeight;bst=Array.from({length:120},()=>({x:Math.random()*bgC.width,y:Math.random()*bgC.height,r:Math.random()*1,a:Math.random(),s:Math.random()*0.003+0.001}));}
+brsz();window.addEventListener('resize',brsz);
+(function bd(){bgX.clearRect(0,0,bgC.width,bgC.height);bst.forEach(s=>{s.a+=s.s;bgX.beginPath();bgX.arc(s.x,s.y,s.r,0,Math.PI*2);bgX.fillStyle=`rgba(180,210,255,${(Math.sin(s.a)+1)/2*0.4})`;bgX.fill();});requestAnimationFrame(bd);})();
+</script>
+</body>
+</html>

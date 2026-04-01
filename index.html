@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>COSM0S — Enter the Universe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --void: #020408;
+      --deep: #060d1a;
+      --accent: #00ffe7;
+      --warn: #ff4d6d;
+      --gold: #ffd166;
+      --dim: #1a2a3a;
+      --text: #c8d8e8;
+      --muted: #4a6a8a;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      background: var(--void);
+      font-family: 'DM Sans', sans-serif;
+      color: var(--text);
+      overflow: hidden;
+    }
+    canvas#stars {
+      position: fixed; inset: 0; z-index: 0;
+    }
+    .page {
+      position: relative; z-index: 2;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+    }
+    .logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(4rem, 10vw, 9rem);
+      letter-spacing: 0.18em;
+      color: #fff;
+      text-shadow: 0 0 60px rgba(0,255,231,0.4), 0 0 120px rgba(0,255,231,0.1);
+      line-height: 1;
+      animation: flicker 6s infinite;
+    }
+    .tagline {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.75rem;
+      letter-spacing: 0.35em;
+      color: var(--accent);
+      margin-top: 0.4rem;
+      margin-bottom: 2.8rem;
+      opacity: 0.8;
+      text-transform: uppercase;
+    }
+    .card {
+      background: rgba(6,13,26,0.85);
+      border: 1px solid rgba(0,255,231,0.15);
+      border-radius: 2px;
+      padding: 2.5rem 3rem;
+      width: min(420px, 92vw);
+      backdrop-filter: blur(20px);
+      box-shadow: 0 0 80px rgba(0,0,0,0.8), inset 0 0 40px rgba(0,255,231,0.02);
+    }
+    .card-title {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.3em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 1.8rem;
+    }
+    .field { margin-bottom: 1.4rem; }
+    .field label {
+      display: block;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.6rem;
+      letter-spacing: 0.25em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .field input {
+      width: 100%;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(0,255,231,0.12);
+      border-radius: 2px;
+      padding: 0.75rem 1rem;
+      color: var(--text);
+      font-family: 'Space Mono', monospace;
+      font-size: 0.85rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .field input:focus {
+      border-color: rgba(0,255,231,0.5);
+      box-shadow: 0 0 20px rgba(0,255,231,0.08);
+    }
+    .hint {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.58rem;
+      color: var(--muted);
+      margin-top: 0.35rem;
+      letter-spacing: 0.05em;
+    }
+    .hint span { color: var(--accent); cursor: pointer; }
+    .btn {
+      width: 100%;
+      padding: 0.85rem;
+      background: var(--accent);
+      color: var(--void);
+      border: none;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.1rem;
+      letter-spacing: 0.2em;
+      cursor: pointer;
+      border-radius: 2px;
+      margin-top: 0.4rem;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: white;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+    .btn:hover::after { opacity: 0.12; }
+    .btn:hover { box-shadow: 0 0 40px rgba(0,255,231,0.4); }
+    .error {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--warn);
+      letter-spacing: 0.1em;
+      text-align: center;
+      margin-top: 1rem;
+      min-height: 1rem;
+      display: none;
+    }
+    .credentials-box {
+      margin-top: 1.5rem;
+      padding: 0.9rem 1rem;
+      background: rgba(255,209,102,0.06);
+      border: 1px solid rgba(255,209,102,0.2);
+      border-radius: 2px;
+    }
+    .credentials-box p {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.62rem;
+      color: var(--gold);
+      letter-spacing: 0.1em;
+      line-height: 1.8;
+    }
+    .credentials-box p span { color: #fff; }
+    .floating-obj {
+      position: fixed;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 1;
+      animation: drift linear infinite;
+    }
+    @keyframes drift {
+      from { transform: translateY(110vh) rotate(0deg); }
+      to { transform: translateY(-20vh) rotate(360deg); }
+    }
+    @keyframes flicker {
+      0%,95%,100% { opacity: 1; }
+      96% { opacity: 0.85; }
+      97% { opacity: 1; }
+      98% { opacity: 0.9; }
+    }
+  </style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+
+<div class="page">
+  <div class="logo">COSM0S</div>
+  <div class="tagline">// The universe is too big. Let's make it weird.</div>
+
+  <div class="card">
+    <div class="card-title">// Restricted Access — Authorized Earthlings Only</div>
+    <div class="field">
+      <label>Mission ID</label>
+      <input type="text" id="user" placeholder="e.g. VOYAGER_7" autocomplete="off" />
+      <div class="hint">Hint: <span onclick="fillCreds()">reveal credentials</span></div>
+    </div>
+    <div class="field">
+      <label>Access Code</label>
+      <input type="password" id="pass" placeholder="••••••••••" />
+    </div>
+    <button class="btn" onclick="login()">INITIATE LAUNCH SEQUENCE</button>
+    <div class="error" id="err">⚠ ACCESS DENIED — YOU ARE NOT AN ALIEN (OR ARE YOU?)</div>
+    <div class="credentials-box">
+      <p>🛸 Mission ID: <span>VOYAGER_7</span></p>
+      <p>🔑 Access Code: <span>BlackHole42!</span></p>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Starfield
+  const canvas = document.getElementById('stars');
+  const ctx = canvas.getContext('2d');
+  let stars = [];
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    stars = Array.from({length: 280}, () => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      r: Math.random() * 1.4,
+      a: Math.random(),
+      speed: Math.random() * 0.004 + 0.001
+    }));
+  }
+  resize();
+  window.addEventListener('resize', resize);
+  function drawStars() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    stars.forEach(s => {
+      s.a += s.speed;
+      const alpha = (Math.sin(s.a) + 1) / 2;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(200,220,255,${alpha * 0.9})`;
+      ctx.fill();
+    });
+    requestAnimationFrame(drawStars);
+  }
+  drawStars();
+
+  // Login
+  function fillCreds() {
+    document.getElementById('user').value = 'VOYAGER_7';
+    document.getElementById('pass').value = 'BlackHole42!';
+  }
+  function login() {
+    const u = document.getElementById('user').value.trim();
+    const p = document.getElementById('pass').value.trim();
+    const err = document.getElementById('err');
+    if (u === 'VOYAGER_7' && p === 'BlackHole42!') {
+      err.style.display = 'none';
+      document.querySelector('.btn').textContent = 'ENGAGING WARP DRIVE...';
+      setTimeout(() => { window.location.href = 'dashboard.html'; }, 1200);
+    } else {
+      err.style.display = 'block';
+      document.querySelector('.card').style.animation = 'none';
+    }
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+</script>
+</body>
+</html>

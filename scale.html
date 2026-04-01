@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>COSM0S — Scale of the Universe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    .scale-hero {
+      text-align: center;
+      padding: 2rem 0 3rem;
+    }
+    .scroll-journey {
+      position: relative;
+      max-width: 760px;
+      margin: 0 auto;
+    }
+    .journey-line {
+      position: absolute;
+      left: 50%;
+      top: 0; bottom: 0;
+      width: 2px;
+      background: linear-gradient(to bottom, var(--accent), var(--purple), var(--warn), var(--gold));
+      transform: translateX(-50%);
+      opacity: 0.3;
+    }
+    .scale-item {
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      margin-bottom: 1.5rem;
+      position: relative;
+    }
+    .scale-item:nth-child(odd) { flex-direction: row-reverse; }
+    .scale-item:nth-child(odd) .scale-text { text-align: right; }
+    .scale-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--scolor, var(--accent));
+      border: 2px solid var(--void);
+      box-shadow: 0 0 15px var(--scolor, var(--accent));
+      flex-shrink: 0;
+      position: relative;
+      z-index: 2;
+    }
+    .scale-visual {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .scale-ball {
+      background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.4), var(--scolor, #fff) 40%, rgba(0,0,0,0.5));
+      border-radius: 50%;
+      transition: all 0.3s;
+    }
+    .scale-text { flex: 1; }
+    .scale-size {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.8rem;
+      letter-spacing: 0.06em;
+      color: var(--scolor, var(--accent));
+      line-height: 1;
+    }
+    .scale-name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.1rem;
+      letter-spacing: 0.08em;
+      color: #fff;
+      margin: 0.15rem 0;
+    }
+    .scale-desc {
+      font-size: 0.78rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .scale-funny {
+      font-size: 0.72rem;
+      color: var(--gold);
+      margin-top: 0.4rem;
+      font-style: italic;
+    }
+
+    /* Animated universe canvas section */
+    .universe-vis {
+      margin: 4rem 0;
+      text-align: center;
+    }
+    #universeCanvas {
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--void);
+      max-width: 100%;
+    }
+    .vis-controls {
+      display: flex;
+      justify-content: center;
+      gap: 0.8rem;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+    .vis-btn {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.6rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      padding: 0.5rem 1rem;
+      background: var(--dim);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      cursor: pointer;
+      border-radius: 2px;
+      transition: all 0.2s;
+    }
+    .vis-btn:hover, .vis-btn.active {
+      color: var(--accent);
+      border-color: var(--accent);
+      background: rgba(0,255,231,0.06);
+    }
+    .comparison-box {
+      margin-top: 4rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+    }
+    .comp-card {
+      background: var(--dim);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 1.5rem;
+      text-align: center;
+    }
+    .comp-card .big-emoji { font-size: 3rem; display: block; margin-bottom: 0.8rem; }
+    .comp-card h4 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.1rem;
+      letter-spacing: 0.08em;
+      color: #fff;
+      margin-bottom: 0.4rem;
+    }
+    .comp-card p { font-size: 0.78rem; color: var(--muted); line-height: 1.5; }
+  </style>
+</head>
+<body>
+<canvas class="bg-canvas" id="bg"></canvas>
+<nav class="content-layer">
+  <a href="dashboard.html" class="nav-logo">COSM0S</a>
+  <ul class="nav-links">
+    <li><a href="planets.html">Weight</a></li>
+    <li><a href="scale.html" class="active">Scale</a></li>
+    <li><a href="galaxy-map.html">Galaxies</a></li>
+    <li><a href="exoplanets.html">Exoplanets</a></li>
+    <li><a href="fermi.html">Fermi</a></li>
+    <li><a href="alien.html">Aliens</a></li>
+  </ul>
+</nav>
+
+<div class="page-wrap content-layer">
+  <div class="scale-hero fade-up">
+    <div class="section-eyebrow">// SCALE COMPREHENSION MODULE</div>
+    <h1 class="section-title">HOW BIG IS<br>EVERYTHING?</h1>
+    <p class="section-sub" style="margin:0 auto 0">From atoms to the observable universe — an illustrated journey that will make you feel wonderfully, hilariously insignificant.</p>
+  </div>
+
+  <div class="universe-vis fade-up-2">
+    <canvas id="universeCanvas" width="760" height="380"></canvas>
+    <div class="vis-controls">
+      <button class="vis-btn active" onclick="setView('solar')">☀️ Solar System</button>
+      <button class="vis-btn" onclick="setView('galaxy')">🌌 Galaxy</button>
+      <button class="vis-btn" onclick="setView('universe')">🔭 Universe</button>
+    </div>
+    <p style="font-family:'Space Mono',monospace;font-size:0.6rem;color:var(--muted);margin-top:0.6rem;letter-spacing:0.1em;" id="visLabel">// SOLAR SYSTEM — CLICK OBJECTS TO LEARN MORE</p>
+  </div>
+
+  <div class="scroll-journey fade-up-3">
+    <div class="journey-line"></div>
+
+    <div class="scale-item" style="--scolor:#9be2ff">
+      <div class="scale-visual"><div class="scale-ball" style="width:8px;height:8px;background:#9be2ff"></div></div>
+      <div class="scale-dot"></div>
+      <div class="scale-text">
+        <div class="scale-size">0.0001 mm</div>
+        <div class="scale-name">An Atom</div>
+        <div class="scale-desc">The building block of everything. You are made of ~7 octillion of them.</div>
+        <div class="scale-funny">🤏 Too small to be humble about.</div>
+      </div>
+    </div>
+
+    <div class="scale-item" style="--scolor:#a8d8ea">
+      <div class="scale-visual"><div class="scale-ball" style="width:12px;height:12px;background:#a8d8ea"></div></div>
+      <div class="scale-dot"></div>
+      <div class="scale-text">
+        <div class="scale-size">~1.7 m</div>
+        <div class="scale-name">A Human</div>
+        <div class="scale-desc">You. Congratulations on being made of star stuff arranged into something that worries about emails.</div>
+        <div class="scale-funny">🧍 Technically a meat robot.</div>
+      </div>
+    </div>
+
+    <div class="scale-item" style="--scolor:#4fc3f7">
+      <div class="scale-visual"><div class="scale-ball" style="width:18px;height:18px;background:#4fc3f7"></div></div>
+      <div class="scale-dot"></div>
+      <div class="scale-text">
+        <div class="scale-size">12,742 km</div>
+        <div class="scale-name">Earth</div>
+        <div class="scale-desc">Our pale blue dot. Hurtling through space at 30 km/s. You don't feel it.</div>
+        <div class="scale-funny">🌍 500M people are awake right now doing absolutely nothing about this.</div>
+      </div>
+    </div>
+
+    <div class="scale-item" style="--scolor:#ffb703">
+      <div class="scale-visual"><div class="scale-ball" style="width:32px;height:32px;background:radial-gradient(circle,#fff 0%,#ffb703 50%,#ff6b00 100%)"></div></div>
+      <div class="scale-dot"></div>
+      <div class="scale-text">
+        <div class="scale-size">1.39 M km</div>
+        <div class="scale-name">The Sun</div>
+        <div class="scale-desc">109 Earths could fit across it. 1.3 million Earths fit inside it. It's basically showing off.</div>
+        <div class="scale-funny">☀️ A giant nuclear explosion that has been exploding for 4.6 billion years. Chill.</div>
+      </div>
+    </div>
+
+    <div class="scale-item" style="--scolor:#e8a838">
+      <div class="scale-visual"><div class="scale-ball" style="width:45px;height:45px;background:radial-gradient(circle,#f0c040 0%,#c88b3a 60%,#7a4a1a 100%)"></div></div>
+      <div class="scale-dot"></div>
+      <div class="scale-text">
+        <div class="scale-size">143,000 km</div>
+        <div class="scale-name">Jupiter</div>
+        <div class="scale-desc">Biggest planet. Has a storm (the Great Red Spot) that's been raging for 350+ years. Goals.</div>
+        <div class="scale-funny">🪐 Earth is literally a pimple on Jupiter's face.</div>
+      </div>
+    </div>
+
+    <div class="scale-item" style="--scolor:#ff6b6b">
+      <div class="scale-visual"><div class="scale-ball" style="width:52px;height:52px;background:radial-gradient(circle,#ff9999 0%,#cc2222 60%,#880000 100%)"></div></div>
+      <div class="scale-dot"></div>
+      <div class="scale-text">
+        <div class="scale-size">1.4 BILLION km</div>
+        <div class="scale-name">Solar System</div>
+        <div class="scale-desc">From Sun to edge of Kuiper Belt. Light takes 5.5 hours to cross it. It's your neighborhood.</div>
+        <div class="scale-funny">🛸 Voyager has been traveling since 1977. Still in the neighborhood.</div>
+      </div>
+    </div>
+
+    <div class="scale-item" style="--scolor:#9b72ff">
+      <div class="scale-visual"><div class="scale-ball" style="width:58px;height:58px;background:radial-gradient(circle,#c0a0ff 0%,#6633cc 60%,#220055 100%)"></div></div>
+      <div class="scale-dot"></div>
+      <div class="scale-text">
+        <div class="scale-size">100,000 LY</div>
+        <div class="scale-name">Milky Way Galaxy</div>
+        <div class="scale-desc">200–400 billion stars. We live in a boring outer arm. The galactic center is a supermassive black hole.</div>
+        <div class="scale-funny">🌌 The solar system takes 225M years to orbit once. We've done it 20 times since Earth formed.</div>
+      </div>
+    </div>
+
+    <div class="scale-item" style="--scolor:#00ffe7">
+      <div class="scale-visual"><div class="scale-ball" style="width:65px;height:65px;background:radial-gradient(circle,#88ffff 0%,#00aaaa 50%,#003333 100%)"></div></div>
+      <div class="scale-dot"></div>
+      <div class="scale-text">
+        <div class="scale-size">93 BLY</div>
+        <div class="scale-name">Observable Universe</div>
+        <div class="scale-desc">93 billion light-years across. 2 trillion galaxies. Each with billions of stars. Each possibly with planets.</div>
+        <div class="scale-funny">🔭 And this is just the part we can SEE. The rest might be infinite. Sleep tight.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="comparison-box fade-up-3" style="margin-top:3rem">
+    <div class="comp-card">
+      <span class="big-emoji">📌</span>
+      <h4>If the Sun were a cell</h4>
+      <p>The Milky Way would be the size of the United States. The observable universe would be larger than the entire Earth.</p>
+    </div>
+    <div class="comp-card">
+      <span class="big-emoji">🏖️</span>
+      <h4>Stars vs Sand Grains</h4>
+      <p>There are roughly 10× more stars in the observable universe than grains of sand on all Earth's beaches.</p>
+    </div>
+    <div class="comp-card">
+      <span class="big-emoji">🐜</span>
+      <h4>You vs The Universe</h4>
+      <p>You are 10⁻²⁷ times the size of the observable universe. You are, statistically speaking, nothing.</p>
+    </div>
+    <div class="comp-card">
+      <span class="big-emoji">⚡</span>
+      <h4>Light-Speed Travel</h4>
+      <p>At 300,000 km/s, you'd reach the Moon in 1.3 seconds. The nearest galaxy: 2 million years. Nope.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// Canvas visualization
+const canvas = document.getElementById('universeCanvas');
+const ctx = canvas.getContext('2d');
+let currentView = 'solar';
+let animFrame;
+
+const views = {
+  solar: {
+    label: '// SOLAR SYSTEM — NOT TO SCALE (OBVIOUSLY)',
+    objects: [
+      {x:0.08, y:0.5, r:28, color:'#ffb703', glow:'#ff8c00', name:'Sun', fact:'Contains 99.86% of solar system mass'},
+      {x:0.20, y:0.5, r:4,  color:'#b5b5b5', glow:'#888', name:'Mercury', fact:'Smallest planet, fastest orbit'},
+      {x:0.30, y:0.5, r:7,  color:'#e8c16b', glow:'#c49a27', name:'Venus', fact:'Hottest planet — 465°C surface'},
+      {x:0.40, y:0.5, r:7,  color:'#4fc3f7', glow:'#0088cc', name:'Earth', fact:'The only known party planet'},
+      {x:0.50, y:0.5, r:5,  color:'#e07b54', glow:'#c0392b', name:'Mars', fact:'Has the tallest volcano in the solar system'},
+      {x:0.62, y:0.5, r:18, color:'#c88b3a', glow:'#8b5e1a', name:'Jupiter', fact:'Has 95 known moons. Overachiever.'},
+      {x:0.75, y:0.5, r:14, color:'#e4d191', glow:'#b8a84a', name:'Saturn', fact:'Rings made of ice & rock. Gorgeous.'},
+      {x:0.85, y:0.5, r:9,  color:'#7de8e8', glow:'#00aaaa', name:'Uranus', fact:'Spins on its side. Had an incident.'},
+      {x:0.93, y:0.5, r:8,  color:'#3f8fff', glow:'#0044cc', name:'Neptune', fact:'Winds reach 2,100 km/h. Windy.'},
+    ]
+  },
+  galaxy: {
+    label: '// MILKY WAY — ARTISTIC IMPRESSION',
+    objects: []
+  },
+  universe: {
+    label: '// OBSERVABLE UNIVERSE — COSMIC WEB',
+    objects: []
+  }
+};
+
+let tooltip = null;
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = (e.clientX - rect.left) * (canvas.width / rect.width);
+  const my = (e.clientY - rect.top) * (canvas.height / rect.height);
+  tooltip = null;
+  if (currentView === 'solar') {
+    for (const o of views.solar.objects) {
+      const ox = o.x * canvas.width, oy = o.y * canvas.height;
+      const dist = Math.hypot(mx - ox, my - oy);
+      if (dist < o.r + 8) { tooltip = {x:ox, y:oy, name:o.name, fact:o.fact}; break; }
+    }
+  }
+});
+
+function setView(v) {
+  currentView = v;
+  document.querySelectorAll('.vis-btn').forEach((b,i) => b.classList.toggle('active', ['solar','galaxy','universe'][i]===v));
+  document.getElementById('visLabel').textContent = views[v].label;
+}
+
+let galaxyParticles = Array.from({length:600}, () => ({
+  a: Math.random() * Math.PI * 2,
+  r: Math.pow(Math.random(), 0.5) * 160,
+  arm: Math.floor(Math.random() * 3),
+  speed: Math.random() * 0.0003 + 0.0001,
+  size: Math.random() * 1.5,
+  color: ['#ffffff','#ffe8b0','#b0c8ff','#ffd0d0'][Math.floor(Math.random()*4)]
+}));
+
+let uParticles = Array.from({length:300}, () => ({
+  x: Math.random(), y: Math.random(),
+  r: Math.random() * 3 + 1,
+  color: `hsl(${200 + Math.random()*60},70%,${40+Math.random()*30}%)`,
+  name: ['Milky Way','Andromeda','Triangulum','M87','NGC 4889','Virgo A','M101','Whirlpool','Sombrero'][Math.floor(Math.random()*9)]
+}));
+
+let t = 0;
+function draw() {
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  t += 0.008;
+
+  if (currentView === 'solar') {
+    // Background
+    const grad = ctx.createLinearGradient(0,0,W,0);
+    grad.addColorStop(0,'#060d1a'); grad.addColorStop(1,'#020408');
+    ctx.fillStyle = grad; ctx.fillRect(0,0,W,H);
+    // Tiny bg stars
+    ctx.fillStyle = 'rgba(200,220,255,0.4)';
+    for(let i=0;i<80;i++){ctx.beginPath();ctx.arc((i*127)%W,(i*311)%H,0.6,0,Math.PI*2);ctx.fill();}
+
+    views.solar.objects.forEach(o => {
+      const ox = o.x*W, oy = o.y*H;
+      // Glow
+      const grd = ctx.createRadialGradient(ox,oy,0,ox,oy,o.r*2.5);
+      grd.addColorStop(0,o.glow+'66'); grd.addColorStop(1,'transparent');
+      ctx.beginPath(); ctx.arc(ox,oy,o.r*2.5,0,Math.PI*2);
+      ctx.fillStyle=grd; ctx.fill();
+      // Planet
+      const pGrd = ctx.createRadialGradient(ox-o.r*0.3,oy-o.r*0.3,o.r*0.1,ox,oy,o.r);
+      pGrd.addColorStop(0,'rgba(255,255,255,0.5)');
+      pGrd.addColorStop(0.5,o.color);
+      pGrd.addColorStop(1,'rgba(0,0,0,0.6)');
+      ctx.beginPath(); ctx.arc(ox,oy,o.r,0,Math.PI*2);
+      ctx.fillStyle=pGrd; ctx.fill();
+      // Saturn rings
+      if(o.name==='Saturn'){
+        ctx.save(); ctx.translate(ox,oy); ctx.scale(1,0.3);
+        for(let ri=0;ri<3;ri++){
+          ctx.beginPath(); ctx.arc(0,0,o.r*1.5+ri*4,0,Math.PI*2);
+          ctx.strokeStyle=`rgba(228,209,145,${0.4-ri*0.1})`; ctx.lineWidth=3; ctx.stroke();
+        }
+        ctx.restore();
+      }
+      // Label
+      ctx.fillStyle='rgba(180,210,255,0.6)';
+      ctx.font='10px Space Mono,monospace';
+      ctx.textAlign='center';
+      ctx.fillText(o.name, ox, oy + o.r + 14);
+    });
+
+    // Tooltip
+    if(tooltip){
+      ctx.fillStyle='rgba(6,13,26,0.9)';
+      ctx.strokeStyle='rgba(0,255,231,0.4)';
+      const tw=200, th=50;
+      const tx=Math.min(tooltip.x-tw/2, W-tw-5);
+      ctx.beginPath(); ctx.roundRect(tx,tooltip.y-o-70,tw,th,3);
+      ctx.fill(); ctx.lineWidth=1; ctx.stroke();
+      ctx.fillStyle='#fff'; ctx.font='bold 11px DM Sans,sans-serif';
+      ctx.textAlign='left';
+      ctx.fillText(tooltip.name, tx+10, tooltip.y-70+18);
+      ctx.fillStyle='rgba(180,210,255,0.7)'; ctx.font='9px DM Sans,sans-serif';
+      const words=tooltip.fact.split(' '); let line='',ly=tooltip.y-70+34;
+      words.forEach(w=>{if((line+w).length>26){ctx.fillText(line,tx+10,ly);line=w+' ';ly+=12;}else line+=w+' ';});
+      ctx.fillText(line,tx+10,ly);
+      ctx.textAlign='center';
+    }
+
+  } else if (currentView === 'galaxy') {
+    ctx.fillStyle='#020408'; ctx.fillRect(0,0,W,H);
+    const cx2=W/2, cy2=H/2;
+    // Core glow
+    const cGrd = ctx.createRadialGradient(cx2,cy2,0,cx2,cy2,60);
+    cGrd.addColorStop(0,'rgba(255,220,100,0.6)'); cGrd.addColorStop(0.5,'rgba(200,150,255,0.2)'); cGrd.addColorStop(1,'transparent');
+    ctx.beginPath(); ctx.arc(cx2,cy2,60,0,Math.PI*2); ctx.fillStyle=cGrd; ctx.fill();
+
+    galaxyParticles.forEach(p => {
+      const armOff = (p.arm / 3) * Math.PI * 2;
+      const spiral = p.a + p.r * 0.05 + armOff + t * 0.05;
+      const x = cx2 + Math.cos(spiral) * p.r;
+      const y = cy2 + Math.sin(spiral) * p.r * 0.45;
+      ctx.beginPath(); ctx.arc(x,y,p.size,0,Math.PI*2);
+      const alpha = Math.max(0.1, 1 - p.r/180);
+      ctx.fillStyle = p.color.replace(')', `,${alpha})`).replace('rgb(','rgba(').replace('#','').length > 7 ? p.color : p.color + Math.round(alpha*255).toString(16).padStart(2,'0');
+      ctx.fillStyle = p.color; ctx.globalAlpha=alpha; ctx.fill(); ctx.globalAlpha=1;
+    });
+    ctx.fillStyle='rgba(255,230,180,0.9)'; ctx.font='bold 14px Bebas Neue,sans-serif';
+    ctx.textAlign='center'; ctx.fillText('YOU ARE HERE →', cx2+60, cy2-25);
+    ctx.beginPath(); ctx.arc(cx2+85, cy2-22, 3, 0, Math.PI*2);
+    ctx.fillStyle='#00ffe7'; ctx.fill();
+
+  } else {
+    ctx.fillStyle='#020408'; ctx.fillRect(0,0,W,H);
+    // Cosmic web filaments
+    ctx.strokeStyle='rgba(100,150,255,0.06)'; ctx.lineWidth=0.5;
+    for(let i=0;i<uParticles.length;i++){
+      for(let j=i+1;j<uParticles.length;j++){
+        const a=uParticles[i], b=uParticles[j];
+        const d=Math.hypot((a.x-b.x)*W,(a.y-b.y)*H);
+        if(d<90){
+          ctx.globalAlpha=(1-d/90)*0.3;
+          ctx.beginPath(); ctx.moveTo(a.x*W,a.y*H); ctx.lineTo(b.x*W,b.y*H); ctx.stroke();
+        }
+      }
+    }
+    ctx.globalAlpha=1;
+    uParticles.forEach(p => {
+      const grd=ctx.createRadialGradient(p.x*W,p.y*H,0,p.x*W,p.y*H,p.r*3);
+      grd.addColorStop(0,p.color); grd.addColorStop(1,'transparent');
+      ctx.beginPath(); ctx.arc(p.x*W,p.y*H,p.r*3,0,Math.PI*2); ctx.fillStyle=grd; ctx.fill();
+      ctx.beginPath(); ctx.arc(p.x*W,p.y*H,p.r*0.5,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
+    });
+    ctx.fillStyle='rgba(0,255,231,0.7)'; ctx.font='10px Space Mono,monospace';
+    ctx.textAlign='center';
+    ctx.fillText('OBSERVABLE UNIVERSE — EACH DOT IS A GALAXY CLUSTER', W/2, H-14);
+  }
+
+  animFrame = requestAnimationFrame(draw);
+}
+draw();
+
+// Main bg stars
+const bgC=document.getElementById('bg'), bgX=bgC.getContext('2d');
+let bst=[];
+function brsz(){bgC.width=innerWidth;bgC.height=innerHeight;bst=Array.from({length:120},()=>({x:Math.random()*bgC.width,y:Math.random()*bgC.height,r:Math.random()*1,a:Math.random(),s:Math.random()*0.003+0.001}));}
+brsz();window.addEventListener('resize',brsz);
+(function bd(){bgX.clearRect(0,0,bgC.width,bgC.height);bst.forEach(s=>{s.a+=s.s;bgX.beginPath();bgX.arc(s.x,s.y,s.r,0,Math.PI*2);bgX.fillStyle=`rgba(180,210,255,${(Math.sin(s.a)+1)/2*0.5})`;bgX.fill();});requestAnimationFrame(bd);})();
+</script>
+</body>
+</html>

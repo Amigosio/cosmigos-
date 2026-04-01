@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>COSM0S — Mission Control</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    .hero {
+      min-height: 60vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding-top: 2rem;
+    }
+    .hero-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(3.5rem, 10vw, 9rem);
+      letter-spacing: 0.08em;
+      color: #fff;
+      line-height: 0.95;
+      text-shadow: 0 0 80px rgba(0,255,231,0.2);
+    }
+    .hero-title span { color: var(--accent); }
+    .hero-meta {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+      margin-bottom: 3rem;
+    }
+    .hero-meta p {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      color: var(--muted);
+    }
+    .hero-meta .divider { width: 1px; height: 20px; background: var(--border); }
+
+    .mission-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .mission-card {
+      background: var(--deep);
+      padding: 2rem;
+      text-decoration: none;
+      color: inherit;
+      position: relative;
+      overflow: hidden;
+      transition: background 0.2s;
+      display: block;
+    }
+    .mission-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--card-color, var(--accent));
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.3s ease;
+    }
+    .mission-card:hover::before { transform: scaleX(1); }
+    .mission-card:hover { background: rgba(0,255,231,0.03); }
+    .mission-card .num {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 3.5rem;
+      color: rgba(255,255,255,0.04);
+      line-height: 1;
+      position: absolute;
+      top: 1rem;
+      right: 1.5rem;
+      letter-spacing: 0.05em;
+    }
+    .mission-card .icon {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      display: block;
+    }
+    .mission-card h3 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.6rem;
+      letter-spacing: 0.06em;
+      color: #fff;
+      margin-bottom: 0.5rem;
+    }
+    .mission-card p {
+      font-size: 0.82rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .mission-card .arrow {
+      margin-top: 1.2rem;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      color: var(--card-color, var(--accent));
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .mission-card:hover .arrow { opacity: 1; }
+
+    .stats-bar {
+      display: flex;
+      gap: 2rem;
+      padding: 1.5rem 0;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 3rem;
+      flex-wrap: wrap;
+    }
+    .stat-item { flex: 1; min-width: 120px; }
+    .stat-item .val {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2.2rem;
+      letter-spacing: 0.05em;
+      color: var(--accent);
+      line-height: 1;
+    }
+    .stat-item .lab {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.55rem;
+      letter-spacing: 0.25em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-top: 0.2rem;
+    }
+
+    .ticker {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.6rem;
+      letter-spacing: 0.15em;
+      color: var(--muted);
+      padding: 0.6rem 0;
+      overflow: hidden;
+      white-space: nowrap;
+      border-top: 1px solid var(--border);
+      margin-top: 4rem;
+    }
+    .ticker-inner {
+      display: inline-block;
+      animation: ticker 30s linear infinite;
+    }
+    @keyframes ticker {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+
+    .logout-btn {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.55rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    .logout-btn:hover { color: var(--warn); }
+  </style>
+</head>
+<body>
+<canvas class="bg-canvas" id="bg"></canvas>
+
+<nav class="content-layer">
+  <a href="dashboard.html" class="nav-logo">COSM0S</a>
+  <ul class="nav-links">
+    <li><a href="planets.html">Weight</a></li>
+    <li><a href="scale.html">Scale</a></li>
+    <li><a href="galaxy-map.html">Galaxies</a></li>
+    <li><a href="exoplanets.html">Exoplanets</a></li>
+    <li><a href="fermi.html">Fermi</a></li>
+    <li><a href="alien.html">Aliens</a></li>
+    <li><button class="logout-btn" onclick="location.href='index.html'">⏻ Exit</button></li>
+  </ul>
+</nav>
+
+<div class="page-wrap content-layer">
+  <div class="hero fade-up">
+    <div class="section-eyebrow">// Mission Control — VOYAGER_7</div>
+    <div class="hero-title">WELCOME TO<br><span>THE VOID</span></div>
+    <div class="hero-meta">
+      <p>STATUS: OPERATIONAL</p>
+      <div class="divider"></div>
+      <p>LOCATION: MILKY WAY · ORION ARM</p>
+      <div class="divider"></div>
+      <p id="clock">--:--:-- UTC</p>
+    </div>
+  </div>
+
+  <div class="stats-bar fade-up-2">
+    <div class="stat-item">
+      <div class="val">93B</div>
+      <div class="lab">Light-Years Observable Universe</div>
+    </div>
+    <div class="stat-item">
+      <div class="val">2T+</div>
+      <div class="lab">Galaxies Estimated</div>
+    </div>
+    <div class="stat-item">
+      <div class="val">5,700+</div>
+      <div class="lab">Confirmed Exoplanets</div>
+    </div>
+    <div class="stat-item">
+      <div class="val">13.8B</div>
+      <div class="lab">Years, Age of Universe</div>
+    </div>
+  </div>
+
+  <div class="mission-grid fade-up-3">
+    <a href="planets.html" class="mission-card" style="--card-color:#00ffe7">
+      <span class="num">01</span>
+      <span class="icon">⚖️</span>
+      <h3>Your Weight on Every Planet</h3>
+      <p>How heavy would you be standing on Jupiter? Spoiler: very, very dead.</p>
+      <div class="arrow">EXPLORE →</div>
+    </a>
+    <a href="scale.html" class="mission-card" style="--card-color:#9b72ff">
+      <span class="num">02</span>
+      <span class="icon">🌌</span>
+      <h3>How Big Is The Universe?</h3>
+      <p>A cartoonish journey from your coffee cup to the edge of everything. Buckle up.</p>
+      <div class="arrow">EXPLORE →</div>
+    </a>
+    <a href="galaxy-map.html" class="mission-card" style="--card-color:#ffd166">
+      <span class="num">03</span>
+      <span class="icon">🗺️</span>
+      <h3>Galaxy Supercluster Map</h3>
+      <p>Navigate the cosmic web. Find Earth's address in the Laniakea supercluster.</p>
+      <div class="arrow">EXPLORE →</div>
+    </a>
+    <a href="exoplanets.html" class="mission-card" style="--card-color:#ff4d6d">
+      <span class="num">04</span>
+      <span class="icon">🪐</span>
+      <h3>Exoplanet Encyclopedia</h3>
+      <p>Worlds of glass, lava oceans, and diamond rain. Real planets, stranger than fiction.</p>
+      <div class="arrow">EXPLORE →</div>
+    </a>
+    <a href="fermi.html" class="mission-card" style="--card-color:#00b4d8">
+      <span class="num">05</span>
+      <span class="icon">👽</span>
+      <h3>The Fermi Paradox</h3>
+      <p>If aliens exist, where the heck are they? The most unsettling question in science.</p>
+      <div class="arrow">EXPLORE →</div>
+    </a>
+    <a href="alien.html" class="mission-card" style="--card-color:#06d6a0">
+      <span class="num">06</span>
+      <span class="icon">🧬</span>
+      <h3>Alien Biology Generator</h3>
+      <p>Design a creature from another world. 100% scientifically plausible. 100% terrifying.</p>
+      <div class="arrow">EXPLORE →</div>
+    </a>
+  </div>
+
+  <div class="ticker">
+    <span class="ticker-inner">
+      &nbsp;🛸 FACT: The Sun contains 99.86% of all mass in the Solar System &nbsp;·&nbsp; 🌌 There are more stars in the universe than grains of sand on Earth &nbsp;·&nbsp; ☄️ Voyager 1 has been traveling since 1977 and is still going &nbsp;·&nbsp; 🪐 Saturn would float in water — it's less dense than water &nbsp;·&nbsp; 🌑 A day on Venus is longer than a year on Venus &nbsp;·&nbsp; 🔭 The observable universe is about 93 billion light-years in diameter &nbsp;·&nbsp; 💀 You are made of exploded star guts &nbsp;·&nbsp; 🕳️ The nearest black hole is about 1,000 light-years away &nbsp;·&nbsp;  🛸 FACT: The Sun contains 99.86% of all mass in the Solar System &nbsp;·&nbsp; 🌌 There are more stars in the universe than grains of sand on Earth &nbsp;·&nbsp; ☄️ Voyager 1 has been traveling since 1977 and is still going &nbsp;·&nbsp; 🪐 Saturn would float in water — it's less dense than water &nbsp;·&nbsp; 🌑 A day on Venus is longer than a year on Venus &nbsp;·&nbsp;
+    </span>
+  </div>
+</div>
+
+<script>
+  // Clock
+  function updateClock() {
+    const now = new Date();
+    document.getElementById('clock').textContent = now.toUTCString().split(' ')[4] + ' UTC';
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  // Starfield
+  const canvas = document.getElementById('bg');
+  const ctx = canvas.getContext('2d');
+  let stars = [];
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    stars = Array.from({length: 200}, () => ({
+      x: Math.random()*canvas.width, y: Math.random()*canvas.height,
+      r: Math.random()*1.2, a: Math.random(), s: Math.random()*0.003+0.001
+    }));
+  }
+  resize(); window.addEventListener('resize', resize);
+  (function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    stars.forEach(s => {
+      s.a += s.s;
+      ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      ctx.fillStyle = `rgba(180,210,255,${(Math.sin(s.a)+1)/2*0.7})`; ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  })();
+</script>
+</body>
+</html>

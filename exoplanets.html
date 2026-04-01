@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>COSM0S — Exoplanet Encyclopedia</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    .filter-bar {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 2rem;
+    }
+    .filter-btn {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.58rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      padding: 0.4rem 0.9rem;
+      background: var(--dim);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      cursor: pointer;
+      border-radius: 2px;
+      transition: all 0.2s;
+    }
+    .filter-btn:hover, .filter-btn.active {
+      color: var(--accent);
+      border-color: rgba(0,255,231,0.4);
+      background: rgba(0,255,231,0.06);
+    }
+    .exo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+    .exo-card {
+      background: var(--dim);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      transition: all 0.25s;
+      cursor: pointer;
+    }
+    .exo-card:hover {
+      border-color: var(--pclr);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 50px rgba(0,0,0,0.5), 0 0 30px rgba(0,0,0,0.3);
+    }
+    .exo-visual {
+      height: 130px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .exo-body {
+      border-radius: 50%;
+      position: relative;
+      z-index: 2;
+    }
+    .exo-info { padding: 1.2rem; }
+    .exo-name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.3rem;
+      letter-spacing: 0.08em;
+      color: #fff;
+      margin-bottom: 0.2rem;
+    }
+    .exo-type {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.55rem;
+      letter-spacing: 0.2em;
+      color: var(--pclr);
+      text-transform: uppercase;
+      margin-bottom: 0.7rem;
+    }
+    .exo-desc {
+      font-size: 0.78rem;
+      color: var(--muted);
+      line-height: 1.55;
+      margin-bottom: 0.8rem;
+    }
+    .exo-stats {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .exo-stat {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.58rem;
+      color: var(--muted);
+    }
+    .exo-stat span { color: var(--text); }
+    .exo-weird {
+      margin-top: 0.8rem;
+      padding: 0.5rem 0.7rem;
+      background: rgba(255,255,255,0.03);
+      border-left: 2px solid var(--pclr);
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-style: italic;
+      border-radius: 0 2px 2px 0;
+    }
+    .count-badge {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.6rem;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 1.5rem;
+    }
+    .count-badge span { color: var(--accent); }
+  </style>
+</head>
+<body>
+<canvas class="bg-canvas" id="bg"></canvas>
+<nav class="content-layer">
+  <a href="dashboard.html" class="nav-logo">COSM0S</a>
+  <ul class="nav-links">
+    <li><a href="planets.html">Weight</a></li>
+    <li><a href="scale.html">Scale</a></li>
+    <li><a href="galaxy-map.html">Galaxies</a></li>
+    <li><a href="exoplanets.html" class="active">Exoplanets</a></li>
+    <li><a href="fermi.html">Fermi</a></li>
+    <li><a href="alien.html">Aliens</a></li>
+  </ul>
+</nav>
+
+<div class="page-wrap content-layer">
+  <div class="fade-up">
+    <div class="section-eyebrow">// EXOPLANET DATABASE — 5,700+ CONFIRMED</div>
+    <h1 class="section-title">WORLDS BEYOND<br>OUR SUN</h1>
+    <p class="section-sub">Real planets discovered by NASA, ESA, and astronomers. They have lava oceans, glass rain, diamond cores, and seven suns. Earth is boring by comparison.</p>
+  </div>
+
+  <div class="filter-bar fade-up-2" id="filterBar">
+    <button class="filter-btn active" onclick="filterEx('all',this)">ALL WORLDS</button>
+    <button class="filter-btn" onclick="filterEx('hot',this)">🔥 INFERNO</button>
+    <button class="filter-btn" onclick="filterEx('cold',this)">❄️ FROZEN</button>
+    <button class="filter-btn" onclick="filterEx('giant',this)">🪐 GAS GIANT</button>
+    <button class="filter-btn" onclick="filterEx('weird',this)">🤯 BIZARRE</button>
+    <button class="filter-btn" onclick="filterEx('habitable',this)">🌱 HABITABLE</button>
+  </div>
+
+  <div class="count-badge fade-up-2">SHOWING <span id="countDisplay">12</span> PLANETS — UNIVERSE CONTAINS ESTIMATED 10²⁴ MORE</div>
+
+  <div class="exo-grid fade-up-3" id="exoGrid"></div>
+</div>
+
+<script>
+const exoplanets = [
+  {
+    name:"55 Cancri e", type:"Lava Super-Earth", cat:["hot","weird"],
+    bg:"linear-gradient(135deg,#ff4400,#cc2200,#880000)",
+    size:55, color:"#ff4400",
+    dist:"41 LY", temp:"2,573°C", mass:"8× Earth", year:"18 hrs",
+    desc:"A world of molten rock. The surface is an ocean of lava. It may rain rocks that solidify mid-air and fall as pebbles.",
+    weird:"Possibly has a diamond mantle beneath the magma. A jewel from hell."
+  },
+  {
+    name:"HD 189733b", type:"Hot Jupiter – Glass Rain", cat:["hot","weird","giant"],
+    bg:"linear-gradient(135deg,#1a6bff,#0044cc,#003399)",
+    size:70, color:"#1a6bff",
+    dist:"63 LY", temp:"1,200°C", mass:"1.1× Jupiter", year:"2.2 days",
+    desc:"Beautiful cobalt blue from space. But it rains GLASS SIDEWAYS at 9,000 km/h winds. Do not vacation here.",
+    weird:"The blue color comes from silicate particles in the atmosphere — essentially powdered glass clouds."
+  },
+  {
+    name:"WASP-12b", type:"Tidally Distorted Hot Jupiter", cat:["hot","giant","weird"],
+    bg:"linear-gradient(135deg,#ff8800,#cc5500,#882200)",
+    size:68, color:"#ff8800",
+    dist:"1,400 LY", temp:"2,200°C", mass:"1.47× Jupiter", year:"26 hrs",
+    desc:"Being torn apart by its star. Egg-shaped, spiraling in, will be consumed in ~3 million years. A cosmic tragedy.",
+    weird:"Absorbs 94% of all light — one of the darkest known exoplanets. A giant void-colored furnace."
+  },
+  {
+    name:"Kepler-16b", type:"Circumbinary Planet", cat:["weird"],
+    bg:"linear-gradient(135deg,#c8a040,#8a6020,#442200)",
+    size:48, color:"#c8a040",
+    dist:"196 LY", temp:"-100°C", mass:"0.33× Jupiter", year:"229 days",
+    desc:"Orbits TWO suns. The real Tatooine. You'd experience double sunsets. NASA basically named it after Star Wars.",
+    weird:"Has two shadows at noon. Double-star sunrises are probably stunning until you remember it's -100°C."
+  },
+  {
+    name:"GJ 1214b", type:"Water World / Steam Planet", cat:["weird","habitable"],
+    bg:"linear-gradient(135deg,#0088ff,#0044aa,#002266)",
+    size:44, color:"#0088ff",
+    dist:"42 LY", temp:"120°C", mass:"6.5× Earth", year:"38 hrs",
+    desc:"May be entirely covered by a global ocean hundreds of km deep. Super-hot water under crushing pressure. No beaches.",
+    weird:"Possibly has a form of water at extraordinary pressure that doesn't exist anywhere on Earth."
+  },
+  {
+    name:"OGLE-2005-BLG-390Lb", type:"Ice Super-Earth", cat:["cold","weird"],
+    bg:"linear-gradient(135deg,#8ab4cc,#4477aa,#223355)",
+    size:42, color:"#8ab4cc",
+    dist:"21,500 LY", temp:"-220°C", mass:"5.5× Earth", year:"10 yrs",
+    desc:"One of the coldest known exoplanets. Surface of rock and ice, similar to Pluto but much larger. Desolate and beautiful.",
+    weird:"Discovered via gravitational microlensing — a cosmic magnifying glass effect. We can't even image it directly."
+  },
+  {
+    name:"Proxima Centauri b", type:"Potentially Habitable", cat:["habitable"],
+    bg:"linear-gradient(135deg,#44aa66,#228844,#114422)",
+    size:40, color:"#44aa66",
+    dist:"4.2 LY", temp:"-39°C avg", mass:"~1.27× Earth", year:"11.2 days",
+    desc:"Our nearest exoplanet neighbor. In the habitable zone of Proxima Centauri. If life exists nearby, it's here.",
+    weird:"Tidally locked — one side always faces the star. Eternal day on one side, eternal night on the other."
+  },
+  {
+    name:"TrES-2b", type:"Ultra-Dark Gas Giant", cat:["weird","giant"],
+    bg:"linear-gradient(135deg,#111111,#080808,#020202)",
+    size:65, color:"#444444",
+    dist:"750 LY", temp:"1,000°C", mass:"1.2× Jupiter", year:"2.5 days",
+    desc:"The darkest known exoplanet. Reflects less than 1% of light — darker than coal, darker than black paint. A black hole but a planet.",
+    weird:"It's thought to be dark due to gaseous sodium and potassium absorbing light. An almost perfectly black sphere."
+  },
+  {
+    name:"KELT-9b", type:"Ultra-Hot Jupiter", cat:["hot","giant"],
+    bg:"linear-gradient(135deg,#ffaaff,#cc44ee,#881199)",
+    size:72, color:"#ffaaff",
+    dist:"670 LY", temp:"4,300°C", mass:"2.88× Jupiter", year:"36 hrs",
+    desc:"Hotter than most stars. The atmosphere is so hot that MOLECULES break apart and reform constantly. Iron rains down.",
+    weird:"Heavy metal vapors — iron, titanium — have been detected in the atmosphere. It's raining liquid metal."
+  },
+  {
+    name:"Kepler-452b", type:"Earth's Cousin", cat:["habitable"],
+    bg:"linear-gradient(135deg,#4488ff,#2255cc,#113399)",
+    size:46, color:"#4488ff",
+    dist:"1,400 LY", temp:"similar to Earth", mass:"~5× Earth", year:"385 days",
+    desc:"Called Earth's 'older cousin' — orbits a Sun-like star at similar distance. 6 billion years old. If life took hold, it's had a head start.",
+    weird:"Its star is 1.5 billion years older than our Sun. Civilizations here had a billion-year head start on us."
+  },
+  {
+    name:"55 Cnc d", type:"Super Jupiter", cat:["giant"],
+    bg:"linear-gradient(135deg,#ff9933,#cc6600,#883300)",
+    size:74, color:"#ff9933",
+    dist:"41 LY", temp:"-20°C", mass:"3.8× Jupiter", year:"14.3 yrs",
+    desc:"A massive gas giant in a multi-planet system. Part of the famous 55 Cancri system — a stellar family of 5 known worlds.",
+    weird:"Its host star is visible to the naked eye. On a clear night, you can literally see this system's star."
+  },
+  {
+    name:"PSR 1257+12 b", type:"Pulsar Planet", cat:["weird"],
+    bg:"linear-gradient(135deg,#aaffaa,#44ff44,#009900)",
+    size:36, color:"#aaffaa",
+    dist:"2,300 LY", temp:"Bombarded with radiation", mass:"0.02× Earth", year:"25.3 days",
+    desc:"Orbits a pulsar — the remnant of a supernova explosion. Constantly irradiated by X-rays. The first ever confirmed exoplanet.",
+    weird:"If you stood here, the pulsar's radiation would be a constant blue shimmer killing you slowly. Atmospheric."
+  },
+];
+
+let currentFilter = 'all';
+
+function buildGrid(filter='all') {
+  const grid = document.getElementById('exoGrid');
+  const filtered = filter === 'all' ? exoplanets : exoplanets.filter(p => p.cat.includes(filter));
+  document.getElementById('countDisplay').textContent = filtered.length;
+  grid.innerHTML = filtered.map(p => `
+    <div class="exo-card" style="--pclr:${p.color}">
+      <div class="exo-visual" style="background:${p.bg}">
+        <div class="exo-body" style="width:${p.size}px;height:${p.size}px;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.3),transparent 60%),${p.bg};box-shadow:0 0 30px ${p.color}66,0 0 60px ${p.color}22"></div>
+      </div>
+      <div class="exo-info">
+        <div class="exo-name">${p.name}</div>
+        <div class="exo-type">${p.type}</div>
+        <div class="exo-desc">${p.desc}</div>
+        <div class="exo-stats">
+          <div class="exo-stat">DIST <span>${p.dist}</span></div>
+          <div class="exo-stat">TEMP <span>${p.temp}</span></div>
+          <div class="exo-stat">MASS <span>${p.mass}</span></div>
+          <div class="exo-stat">YEAR <span>${p.year}</span></div>
+        </div>
+        <div class="exo-weird">💡 ${p.weird}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function filterEx(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  buildGrid(f);
+}
+
+buildGrid();
+
+// BG stars
+const bgC=document.getElementById('bg'),bgX=bgC.getContext('2d');let bst=[];
+function brsz(){bgC.width=innerWidth;bgC.height=innerHeight;bst=Array.from({length:130},()=>({x:Math.random()*bgC.width,y:Math.random()*bgC.height,r:Math.random()*1.1,a:Math.random(),s:Math.random()*0.003+0.001}));}
+brsz();window.addEventListener('resize',brsz);
+(function bd(){bgX.clearRect(0,0,bgC.width,bgC.height);bst.forEach(s=>{s.a+=s.s;bgX.beginPath();bgX.arc(s.x,s.y,s.r,0,Math.PI*2);bgX.fillStyle=`rgba(180,210,255,${(Math.sin(s.a)+1)/2*0.5})`;bgX.fill();});requestAnimationFrame(bd);})();
+</script>
+</body>
+</html>

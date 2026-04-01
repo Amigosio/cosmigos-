@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>COSM0S — Galaxy Supercluster Map</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    .map-container {
+      position: relative;
+      background: #020408;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      cursor: crosshair;
+    }
+    #galaxyMap { display: block; width: 100%; }
+    .map-legend {
+      display: flex;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+      padding: 1rem 1.2rem;
+      background: var(--dim);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.6rem;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+    .supercluster-info {
+      margin-top: 2.5rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px,1fr));
+      gap: 1rem;
+    }
+    .sc-card {
+      background: var(--dim);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 1.5rem;
+      transition: all 0.2s;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+    .sc-card::after {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      background: var(--c);
+    }
+    .sc-card:hover { border-color: var(--c); background: rgba(6,13,26,0.9); }
+    .sc-card h4 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.3rem;
+      letter-spacing: 0.08em;
+      color: #fff;
+      margin-bottom: 0.3rem;
+    }
+    .sc-card .sc-size {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.6rem;
+      letter-spacing: 0.15em;
+      color: var(--c);
+      margin-bottom: 0.6rem;
+    }
+    .sc-card p { font-size: 0.78rem; color: var(--muted); line-height: 1.6; }
+    .sc-card .sc-tag {
+      display: inline-block;
+      margin-top: 0.6rem;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.55rem;
+      letter-spacing: 0.15em;
+      padding: 0.15rem 0.5rem;
+      background: rgba(255,255,255,0.05);
+      border-radius: 2px;
+      color: var(--muted);
+    }
+
+    .address-box {
+      margin-top: 2.5rem;
+      padding: 2rem;
+      background: rgba(0,255,231,0.04);
+      border: 1px solid rgba(0,255,231,0.2);
+      border-radius: 3px;
+      text-align: center;
+    }
+    .address-box h3 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.5rem;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      margin-bottom: 1rem;
+    }
+    .cosmic-address {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      color: var(--text);
+      line-height: 2.4;
+    }
+    .cosmic-address .level { color: var(--muted); margin-right: 0.5rem; }
+    .cosmic-address .val { color: #fff; }
+    .cosmic-address .arrow { color: var(--accent); }
+  </style>
+</head>
+<body>
+<canvas class="bg-canvas" id="bg"></canvas>
+<nav class="content-layer">
+  <a href="dashboard.html" class="nav-logo">COSM0S</a>
+  <ul class="nav-links">
+    <li><a href="planets.html">Weight</a></li>
+    <li><a href="scale.html">Scale</a></li>
+    <li><a href="galaxy-map.html" class="active">Galaxies</a></li>
+    <li><a href="exoplanets.html">Exoplanets</a></li>
+    <li><a href="fermi.html">Fermi</a></li>
+    <li><a href="alien.html">Aliens</a></li>
+  </ul>
+</nav>
+
+<div class="page-wrap content-layer">
+  <div class="fade-up">
+    <div class="section-eyebrow">// LARGE-SCALE STRUCTURE MODULE</div>
+    <h1 class="section-title">GALAXY<br>SUPERCLUSTER MAP</h1>
+    <p class="section-sub">Zoom out far enough and galaxies form cosmic filaments and walls — the largest structures in the universe. Here's our cosmic neighborhood.</p>
+  </div>
+
+  <div class="map-container fade-up-2">
+    <canvas id="galaxyMap" height="480"></canvas>
+  </div>
+  <div class="map-legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#00ffe7"></div>Our Location (Milky Way)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ffd166"></div>Supercluster Core</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#9b72ff"></div>Galaxy Groups/Clusters</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ff4d6d"></div>Galaxy Filaments</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#1a2a3a"></div>Cosmic Voids</div>
+  </div>
+
+  <div class="address-box fade-up-2">
+    <h3>📍 YOUR COSMIC ADDRESS</h3>
+    <div class="cosmic-address">
+      <span class="level">SUPERCLUSTER:</span><span class="val">Laniakea Supercluster</span><span class="arrow"> ▸ </span>
+      <span class="level">CLUSTER:</span><span class="val">Virgo Supercluster</span><span class="arrow"> ▸ </span>
+      <span class="level">GROUP:</span><span class="val">Local Group</span><span class="arrow"> ▸ </span>
+      <span class="level">GALAXY:</span><span class="val">Milky Way</span><span class="arrow"> ▸ </span>
+      <span class="level">ARM:</span><span class="val">Orion–Cygnus Arm</span><span class="arrow"> ▸ </span>
+      <span class="level">STAR:</span><span class="val">Sol</span><span class="arrow"> ▸ </span>
+      <span class="level">PLANET:</span><span class="val">Earth (3rd rock)</span>
+    </div>
+  </div>
+
+  <div class="supercluster-info fade-up-3">
+    <div class="sc-card" style="--c:#00ffe7">
+      <h4>Laniakea Supercluster</h4>
+      <div class="sc-size">520 MILLION LY ACROSS</div>
+      <p>Home sweet home. Contains ~100,000 galaxies including our Milky Way. Discovered in 2014 — we didn't even know our own address until recently.</p>
+      <span class="sc-tag">YOUR SUPERCLUSTER</span>
+    </div>
+    <div class="sc-card" style="--c:#ffd166">
+      <h4>Perseus–Pisces Filament</h4>
+      <div class="sc-size">300 MILLION LY LONG</div>
+      <p>One of the largest structures visible from Earth. A massive cosmic wall of galaxy clusters, stretching across the sky like a cosmic Great Wall.</p>
+      <span class="sc-tag">NEARBY NEIGHBOR</span>
+    </div>
+    <div class="sc-card" style="--c:#9b72ff">
+      <h4>Coma Supercluster</h4>
+      <div class="sc-size">300+ MILLION LY ACROSS</div>
+      <p>Home to the famous Coma Cluster with over 1,000 galaxies. Dark matter was first proposed here — scientists noticed galaxies orbiting too fast.</p>
+      <span class="sc-tag">DARK MATTER BIRTHPLACE</span>
+    </div>
+    <div class="sc-card" style="--c:#ff4d6d">
+      <h4>Shapley Supercluster</h4>
+      <div class="sc-size">650 MILLION LY ACROSS</div>
+      <p>The most massive concentration of galaxies in the local universe. Contains tens of thousands of galaxies and is actually pulling our supercluster toward it.</p>
+      <span class="sc-tag">GREAT ATTRACTOR REGION</span>
+    </div>
+    <div class="sc-card" style="--c:#06d6a0">
+      <h4>Boötes Void</h4>
+      <div class="sc-size">250 MILLION LY WIDE EMPTINESS</div>
+      <p>A massive cosmic void — almost completely empty. If the Milky Way were inside it, we wouldn't have discovered other galaxies until the 1980s.</p>
+      <span class="sc-tag">THE GREAT NOTHING</span>
+    </div>
+    <div class="sc-card" style="--c:#ff9f1c">
+      <h4>Hercules–Corona Borealis Wall</h4>
+      <div class="sc-size">10 BILLION LY ACROSS</div>
+      <p>The largest known structure in the observable universe. So large it challenges the cosmological principle — that the universe looks the same in all directions.</p>
+      <span class="sc-tag">LARGEST KNOWN STRUCTURE</span>
+    </div>
+  </div>
+</div>
+
+<script>
+// Galaxy map canvas
+const mc = document.getElementById('galaxyMap');
+const mctx = mc.getContext('2d');
+mc.width = mc.parentElement.clientWidth;
+
+const W = mc.width, H = mc.height;
+let t = 0;
+
+// Define structures
+const superclusters = [
+  { name:'Laniakea\n(US)', x:0.42, y:0.52, r:80, color:'#00ffe7', alpha:0.15, home:true },
+  { name:'Virgo SC', x:0.42, y:0.52, r:35, color:'#88ffff', alpha:0.12 },
+  { name:'Perseus-Pisces', x:0.22, y:0.35, r:55, color:'#ffd166', alpha:0.12 },
+  { name:'Coma SC', x:0.30, y:0.22, r:45, color:'#9b72ff', alpha:0.13 },
+  { name:'Shapley SC', x:0.68, y:0.70, r:70, color:'#ff4d6d', alpha:0.11 },
+  { name:'Hydra-Centaurus', x:0.55, y:0.60, r:40, color:'#ff9f1c', alpha:0.1 },
+  { name:'Boötes\nVoid', x:0.62, y:0.28, r:60, color:'#0a1520', alpha:0.8, isVoid:true },
+  { name:'Pisces-Cetus SC', x:0.18, y:0.65, r:50, color:'#06d6a0', alpha:0.1 },
+  { name:'Sculptor SC', x:0.28, y:0.75, r:38, color:'#c77dff', alpha:0.1 },
+];
+
+// Galaxy dots
+const galaxies = Array.from({length:320}, () => ({
+  x: Math.random(), y: Math.random(),
+  r: Math.random() * 2 + 0.5,
+  color: ['#ffffff','#ffe8c0','#c0d8ff','#ffd166','#9b72ff'][Math.floor(Math.random()*5)],
+  pulse: Math.random() * Math.PI * 2,
+  speed: Math.random() * 0.02 + 0.005
+}));
+
+// Filaments (bezier control points)
+const filaments = [
+  { pts:[0.42,0.52, 0.32,0.38, 0.22,0.35], color:'#ff4d6d' },
+  { pts:[0.42,0.52, 0.36,0.37, 0.30,0.22], color:'#9b72ff' },
+  { pts:[0.42,0.52, 0.55,0.60, 0.68,0.70], color:'#ffd166' },
+  { pts:[0.22,0.35, 0.20,0.50, 0.18,0.65], color:'#06d6a0' },
+  { pts:[0.30,0.22, 0.45,0.25, 0.62,0.28], color:'rgba(150,100,255,0.4)' },
+  { pts:[0.68,0.70, 0.50,0.73, 0.28,0.75], color:'#c77dff' },
+];
+
+let tooltip = null;
+mc.addEventListener('mousemove', e => {
+  const rect = mc.getBoundingClientRect();
+  const mx = (e.clientX - rect.left) * (W / rect.width);
+  const my = (e.clientY - rect.top) * (H / rect.height);
+  tooltip = null;
+  for (const sc of superclusters) {
+    if (sc.isVoid) continue;
+    const d = Math.hypot(mx - sc.x*W, my - sc.y*H);
+    if (d < sc.r) { tooltip = { ...sc, mx, my }; break; }
+  }
+  mc.style.cursor = tooltip ? 'pointer' : 'crosshair';
+});
+
+function draw() {
+  t += 0.01;
+  mctx.clearRect(0, 0, W, H);
+
+  // Deep space bg
+  const bgGrd = mctx.createRadialGradient(W*0.4,H*0.5,0,W*0.4,H*0.5,W*0.7);
+  bgGrd.addColorStop(0,'#040c1a'); bgGrd.addColorStop(1,'#020408');
+  mctx.fillStyle = bgGrd; mctx.fillRect(0,0,W,H);
+
+  // Draw voids first
+  superclusters.filter(s=>s.isVoid).forEach(sc=>{
+    mctx.beginPath(); mctx.arc(sc.x*W, sc.y*H, sc.r, 0, Math.PI*2);
+    mctx.fillStyle=`rgba(1,3,8,0.9)`; mctx.fill();
+    mctx.strokeStyle='rgba(30,50,80,0.3)'; mctx.lineWidth=1; mctx.stroke();
+    mctx.fillStyle='rgba(50,80,120,0.35)';
+    mctx.font='9px Space Mono,monospace'; mctx.textAlign='center';
+    mctx.fillText('VOID', sc.x*W, sc.y*H);
+  });
+
+  // Filaments
+  filaments.forEach(f => {
+    const [x1,y1,cx,cy,x2,y2] = f.pts;
+    mctx.beginPath();
+    mctx.moveTo(x1*W,y1*H);
+    mctx.quadraticCurveTo(cx*W,cy*H,x2*W,y2*H);
+    mctx.strokeStyle=f.color.includes('rgba')?f.color:f.color+'55';
+    mctx.lineWidth=0.8; mctx.stroke();
+  });
+
+  // Superclusters
+  superclusters.filter(s=>!s.isVoid).forEach(sc => {
+    const pulse = sc.home ? Math.sin(t*2)*0.03 : 0;
+    const grd = mctx.createRadialGradient(sc.x*W,sc.y*H,0,sc.x*W,sc.y*H,sc.r+pulse*20);
+    grd.addColorStop(0, sc.color+'40');
+    grd.addColorStop(0.5, sc.color+(sc.home?'20':'15'));
+    grd.addColorStop(1,'transparent');
+    mctx.beginPath(); mctx.arc(sc.x*W,sc.y*H,sc.r+pulse*20,0,Math.PI*2);
+    mctx.fillStyle=grd; mctx.fill();
+    // Outline
+    mctx.beginPath(); mctx.arc(sc.x*W,sc.y*H,sc.r,0,Math.PI*2);
+    mctx.strokeStyle=sc.color+(sc.home?'60':'30'); mctx.lineWidth=sc.home?1.5:0.8; mctx.stroke();
+    // Label
+    mctx.fillStyle=sc.home?sc.color:'rgba(180,210,255,0.5)';
+    mctx.font=`${sc.home?'10':'8'}px Space Mono,monospace`;
+    mctx.textAlign='center';
+    const lines = sc.name.split('\n');
+    lines.forEach((ln,i) => mctx.fillText(ln, sc.x*W, sc.y*H - sc.r - 8 + i*12));
+  });
+
+  // Galaxy dots
+  galaxies.forEach(g => {
+    g.pulse += g.speed;
+    const alpha = (Math.sin(g.pulse)+1)/2 * 0.8 + 0.1;
+    mctx.beginPath(); mctx.arc(g.x*W,g.y*H,g.r*0.6,0,Math.PI*2);
+    mctx.fillStyle=g.color; mctx.globalAlpha=alpha; mctx.fill();
+    mctx.globalAlpha=1;
+  });
+
+  // HOME marker
+  const hx = 0.42*W, hy = 0.52*H;
+  const r2 = 5 + Math.sin(t*3)*2;
+  mctx.beginPath(); mctx.arc(hx,hy,r2,0,Math.PI*2);
+  mctx.fillStyle='rgba(0,255,231,0.15)'; mctx.fill();
+  mctx.beginPath(); mctx.arc(hx,hy,3,0,Math.PI*2);
+  mctx.fillStyle='#00ffe7'; mctx.fill();
+  mctx.fillStyle='#00ffe7';
+  mctx.font='9px Space Mono,monospace'; mctx.textAlign='left';
+  mctx.fillText('← YOU', hx+7, hy+3);
+
+  // Scale bar
+  mctx.strokeStyle='rgba(180,210,255,0.3)'; mctx.lineWidth=1;
+  mctx.beginPath(); mctx.moveTo(30,H-25); mctx.lineTo(130,H-25); mctx.stroke();
+  mctx.beginPath(); mctx.moveTo(30,H-20); mctx.lineTo(30,H-30); mctx.stroke();
+  mctx.beginPath(); mctx.moveTo(130,H-20); mctx.lineTo(130,H-30); mctx.stroke();
+  mctx.fillStyle='rgba(150,180,210,0.6)';
+  mctx.font='9px Space Mono,monospace'; mctx.textAlign='center';
+  mctx.fillText('~500 MLY', 80, H-12);
+
+  // Tooltip
+  if(tooltip) {
+    const tx = Math.min(tooltip.mx+12, W-180);
+    const ty = Math.max(tooltip.my-60, 5);
+    mctx.fillStyle='rgba(2,6,14,0.95)';
+    mctx.strokeStyle=tooltip.color+'80';
+    mctx.lineWidth=1;
+    mctx.beginPath(); mctx.roundRect(tx,ty,175,55,3); mctx.fill(); mctx.stroke();
+    mctx.fillStyle='#fff'; mctx.font='bold 11px DM Sans,sans-serif';
+    mctx.textAlign='left'; mctx.fillText(tooltip.name.replace('\n',' '),tx+10,ty+18);
+    mctx.fillStyle='rgba(180,210,255,0.6)'; mctx.font='9px DM Sans,sans-serif';
+    mctx.fillText(tooltip.home?'Your cosmic home':'Galaxy supercluster region',tx+10,ty+35);
+  }
+
+  requestAnimationFrame(draw);
+}
+draw();
+
+// BG stars
+const bgC=document.getElementById('bg'),bgX=bgC.getContext('2d');let bst=[];
+function brsz(){bgC.width=innerWidth;bgC.height=innerHeight;bst=Array.from({length:100},()=>({x:Math.random()*bgC.width,y:Math.random()*bgC.height,r:Math.random()*1,a:Math.random(),s:Math.random()*0.003+0.001}));}
+brsz();window.addEventListener('resize',brsz);
+(function bd(){bgX.clearRect(0,0,bgC.width,bgC.height);bst.forEach(s=>{s.a+=s.s;bgX.beginPath();bgX.arc(s.x,s.y,s.r,0,Math.PI*2);bgX.fillStyle=`rgba(180,210,255,${(Math.sin(s.a)+1)/2*0.4})`;bgX.fill();});requestAnimationFrame(bd);})();
+</script>
+</body>
+</html>

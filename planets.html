@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>COSM0S — Planetary Weight</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    .weight-input-area {
+      display: flex;
+      align-items: flex-end;
+      gap: 1rem;
+      margin-bottom: 3rem;
+      flex-wrap: wrap;
+    }
+    .input-group label {
+      display: block;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.6rem;
+      letter-spacing: 0.25em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .weight-field {
+      background: var(--dim);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 0.8rem 1.2rem;
+      color: #fff;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2rem;
+      letter-spacing: 0.1em;
+      width: 180px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .weight-field:focus { border-color: var(--accent); }
+    .unit-toggle {
+      display: flex;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .unit-btn {
+      padding: 0.8rem 1.2rem;
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-family: 'Space Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .unit-btn.active {
+      background: var(--accent);
+      color: var(--void);
+    }
+
+    .planets-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+    .planet-card {
+      background: var(--dim);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1.5rem;
+      text-align: center;
+      transition: all 0.25s;
+      position: relative;
+      overflow: hidden;
+    }
+    .planet-card::before {
+      content: '';
+      position: absolute;
+      top: -40%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80%;
+      padding-bottom: 80%;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--pcolor) 0%, transparent 70%);
+      opacity: 0.12;
+      transition: opacity 0.3s;
+    }
+    .planet-card:hover::before { opacity: 0.22; }
+    .planet-card:hover {
+      border-color: var(--pcolor);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+    }
+    .planet-emoji { font-size: 3rem; display: block; margin-bottom: 0.5rem; }
+    .planet-name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.3rem;
+      letter-spacing: 0.1em;
+      color: #fff;
+      margin-bottom: 0.2rem;
+    }
+    .planet-gravity {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.55rem;
+      letter-spacing: 0.15em;
+      color: var(--muted);
+      margin-bottom: 1rem;
+    }
+    .planet-weight {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2.2rem;
+      letter-spacing: 0.05em;
+      color: var(--pcolor);
+      line-height: 1;
+    }
+    .planet-unit {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      color: var(--muted);
+      margin-top: 0.2rem;
+    }
+    .planet-quip {
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-top: 0.8rem;
+      font-style: italic;
+      line-height: 1.4;
+      min-height: 2.4rem;
+    }
+
+    .fun-fact-box {
+      margin-top: 3rem;
+      padding: 2rem;
+      background: rgba(155,114,255,0.06);
+      border: 1px solid rgba(155,114,255,0.2);
+      border-radius: 3px;
+    }
+    .fun-fact-box h3 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.4rem;
+      letter-spacing: 0.1em;
+      color: var(--purple);
+      margin-bottom: 0.8rem;
+    }
+    .fun-fact-box p {
+      font-size: 0.85rem;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+  </style>
+</head>
+<body>
+<canvas class="bg-canvas" id="bg"></canvas>
+<nav class="content-layer">
+  <a href="dashboard.html" class="nav-logo">COSM0S</a>
+  <ul class="nav-links">
+    <li><a href="planets.html" class="active">Weight</a></li>
+    <li><a href="scale.html">Scale</a></li>
+    <li><a href="galaxy-map.html">Galaxies</a></li>
+    <li><a href="exoplanets.html">Exoplanets</a></li>
+    <li><a href="fermi.html">Fermi</a></li>
+    <li><a href="alien.html">Aliens</a></li>
+  </ul>
+</nav>
+
+<div class="page-wrap content-layer">
+  <div class="fade-up">
+    <div class="section-eyebrow">// GRAVITATIONAL ANALYSIS MODULE</div>
+    <h1 class="section-title">YOUR WEIGHT<br>ACROSS THE COSMOS</h1>
+    <p class="section-sub">Enter your Earth weight and discover how gravity would (literally) pull you down — or let you fly — on every world in our solar system.</p>
+  </div>
+
+  <div class="weight-input-area fade-up-2">
+    <div class="input-group">
+      <label>Your Earth Weight</label>
+      <input type="number" class="weight-field" id="weightInput" value="70" min="1" max="999" oninput="updateWeights()"/>
+    </div>
+    <div class="input-group">
+      <label>Unit</label>
+      <div class="unit-toggle">
+        <button class="unit-btn active" id="btnKg" onclick="setUnit('kg')">KG</button>
+        <button class="unit-btn" id="btnLbs" onclick="setUnit('lbs')">LBS</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="planets-grid fade-up-3" id="planetsGrid"></div>
+
+  <div class="fun-fact-box fade-up-3">
+    <h3>🧠 The Science of Weight vs Mass</h3>
+    <p>Your <em>mass</em> never changes across the universe — it's the amount of matter in your body. Your <em>weight</em> is mass × gravitational acceleration. On Jupiter (gravity = 2.53× Earth), you'd weigh 2.53× more. On the Moon (0.166× Earth), you'd feel weightless and bouncy. Gravity: the original body-shaming since the Big Bang.</p>
+  </div>
+</div>
+
+<script>
+const planets = [
+  { name:"Mercury", emoji:"☿", gravity:0.378, color:"#b5b5b5", quip:"You'd feel light on your feet. Mercury disagrees." },
+  { name:"Venus",   emoji:"♀️", gravity:0.907, color:"#e8c16b", quip:"Same weight, but 465°C. Eternal sauna of death." },
+  { name:"Earth",   emoji:"🌍", gravity:1.000, color:"#4fc3f7", quip:"Home. Where pizza and gravity coexist." },
+  { name:"Moon",    emoji:"🌕", gravity:0.166, color:"#d4d4d4", quip:"Olympic long jump? You'd clear 50 meters." },
+  { name:"Mars",    emoji:"🔴", gravity:0.379, color:"#e07b54", quip:"Time to re-evaluate your dietary choices." },
+  { name:"Jupiter", emoji:"🪐", gravity:2.528, color:"#c88b3a", quip:"You couldn't stand. Your knees would resign." },
+  { name:"Saturn",  emoji:"💛", gravity:1.065, color:"#e4d191", quip:"Slightly heavier. Also the rings are breathtaking." },
+  { name:"Uranus",  emoji:"🔵", gravity:0.886, color:"#7de8e8", quip:"Slightly lighter. Also you'd glow blue for some reason." },
+  { name:"Neptune", emoji:"🌊", gravity:1.137, color:"#3f8fff", quip:"Windiest planet. Your hair would be... something." },
+  { name:"Pluto",   emoji:"❄️", gravity:0.063, color:"#c3a8d1", quip:"You'd weigh less than a bag of rice. Pluto solidarity." },
+  { name:"Sun",     emoji:"☀️", gravity:27.90, color:"#ffb703", quip:"You wouldn't exist. Flattest pancake in history." },
+];
+
+let unit = 'kg';
+function setUnit(u) {
+  unit = u;
+  document.getElementById('btnKg').classList.toggle('active', u==='kg');
+  document.getElementById('btnLbs').classList.toggle('active', u==='lbs');
+  updateWeights();
+}
+
+function updateWeights() {
+  let val = parseFloat(document.getElementById('weightInput').value) || 70;
+  let kg = unit === 'lbs' ? val * 0.453592 : val;
+  const grid = document.getElementById('planetsGrid');
+  grid.querySelectorAll('.planet-weight').forEach((el, i) => {
+    let w = kg * planets[i].gravity;
+    el.textContent = unit === 'lbs' ? (w * 2.20462).toFixed(1) : w.toFixed(1);
+  });
+}
+
+function buildGrid() {
+  const grid = document.getElementById('planetsGrid');
+  grid.innerHTML = planets.map((p,i) => `
+    <div class="planet-card" style="--pcolor:${p.color}">
+      <span class="planet-emoji">${p.emoji}</span>
+      <div class="planet-name">${p.name}</div>
+      <div class="planet-gravity">GRAVITY × ${p.gravity}</div>
+      <div class="planet-weight" id="w${i}">—</div>
+      <div class="planet-unit">${unit === 'kg' ? 'KILOGRAMS' : 'POUNDS'}</div>
+      <div class="planet-quip">${p.quip}</div>
+    </div>
+  `).join('');
+
+  // Fix unit label reactivity
+  document.querySelectorAll('.planet-unit').forEach(el => {
+    el.textContent = unit === 'kg' ? 'KILOGRAMS' : 'POUNDS';
+  });
+  updateWeights();
+}
+buildGrid();
+
+// Starfield
+const c = document.getElementById('bg'), cx = c.getContext('2d');
+let st=[];
+function rsz(){c.width=innerWidth;c.height=innerHeight;st=Array.from({length:150},()=>({x:Math.random()*c.width,y:Math.random()*c.height,r:Math.random()*1.2,a:Math.random(),s:Math.random()*0.003+0.001}));}
+rsz();window.addEventListener('resize',rsz);
+(function d(){cx.clearRect(0,0,c.width,c.height);st.forEach(s=>{s.a+=s.s;cx.beginPath();cx.arc(s.x,s.y,s.r,0,Math.PI*2);cx.fillStyle=`rgba(180,210,255,${(Math.sin(s.a)+1)/2*0.6})`;cx.fill();});requestAnimationFrame(d);})();
+</script>
+</body>
+</html>
