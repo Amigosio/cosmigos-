@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>COSM0S — Voyager Golden Record</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    .record-hero {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      gap: 3rem;
+      align-items: center;
+      margin-bottom: 4rem;
+    }
+    @media(max-width:640px){ .record-hero { grid-template-columns:1fr; } }
+    #recordCanvas { display:block; }
+    .hero-text {}
+    .launch-data {
+      display:flex; flex-direction:column; gap:0.5rem; margin-top:1.5rem;
+    }
+    .launch-row {
+      display:flex; justify-content:space-between;
+      font-family:'Space Mono',monospace; font-size:0.62rem; letter-spacing:0.1em;
+      padding:0.45rem 0; border-bottom:1px solid var(--border);
+    }
+    .launch-row .lk { color:var(--muted); text-transform:uppercase; }
+    .launch-row .lv { color:#fff; }
+
+    /* TABS */
+    .tab-nav {
+      display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:2.5rem; overflow-x:auto;
+    }
+    .tab-btn {
+      font-family:'Space Mono',monospace; font-size:0.6rem; letter-spacing:0.18em; text-transform:uppercase;
+      padding:0.75rem 1.3rem; background:none; border:none; color:var(--muted); cursor:pointer;
+      border-bottom:2px solid transparent; transition:all 0.2s; white-space:nowrap;
+    }
+    .tab-btn:hover { color:var(--text); }
+    .tab-btn.active { color:var(--accent); border-bottom-color:var(--accent); }
+    .tab-panel { display:none; }
+    .tab-panel.active { display:block; }
+
+    /* SOUNDS */
+    .sounds-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:1rem; }
+    .sound-card {
+      background:var(--dim); border:1px solid var(--border); border-radius:3px; padding:1.2rem;
+      transition:all 0.2s; cursor:pointer; position:relative; overflow:hidden;
+    }
+    .sound-card::before {
+      content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--sc,var(--accent));
+    }
+    .sound-card:hover { border-color:var(--sc,var(--accent)); background:rgba(0,255,231,0.03); }
+    .sound-card.playing { border-color:var(--sc,var(--accent)); box-shadow:0 0 30px rgba(0,255,231,0.1); }
+    .sound-num {
+      font-family:'Bebas Neue',sans-serif; font-size:2.5rem; color:rgba(255,255,255,0.05);
+      position:absolute; right:0.8rem; top:0.2rem; letter-spacing:0.05em; line-height:1;
+    }
+    .sound-icon { font-size:1.5rem; margin-bottom:0.5rem; }
+    .sound-title { font-family:'Bebas Neue',sans-serif; font-size:1.1rem; letter-spacing:0.06em; color:#fff; margin-bottom:0.2rem; }
+    .sound-cat {
+      font-family:'Space Mono',monospace; font-size:0.52rem; letter-spacing:0.18em;
+      color:var(--sc,var(--accent)); text-transform:uppercase; margin-bottom:0.5rem;
+    }
+    .sound-desc { font-size:0.75rem; color:var(--muted); line-height:1.5; }
+    .sound-wave {
+      display:flex; align-items:center; gap:2px; margin-top:0.8rem; height:24px;
+    }
+    .wave-bar {
+      width:3px; border-radius:2px; background:var(--sc,var(--accent));
+      animation:waveIdle 1.2s ease-in-out infinite; opacity:0.3;
+    }
+    .sound-card.playing .wave-bar { opacity:1; animation:wavePlaying 0.6s ease-in-out infinite; }
+    @keyframes waveIdle { 0%,100%{height:4px} 50%{height:8px} }
+    @keyframes wavePlaying {
+      0%,100%{height:4px} 50%{height:var(--h,16px)}
+    }
+
+    /* IMAGES */
+    .images-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:1rem; }
+    .img-card {
+      background:var(--dim); border:1px solid var(--border); border-radius:3px; overflow:hidden;
+      transition:all 0.2s; cursor:pointer;
+    }
+    .img-card:hover { border-color:var(--gold); transform:translateY(-3px); }
+    .img-visual {
+      height:140px; display:flex; align-items:center; justify-content:center;
+      font-size:3.5rem; position:relative; overflow:hidden;
+    }
+    .img-info { padding:0.9rem 1rem; }
+    .img-title { font-family:'Bebas Neue',sans-serif; font-size:1rem; letter-spacing:0.06em; color:#fff; margin-bottom:0.3rem; }
+    .img-desc { font-size:0.72rem; color:var(--muted); line-height:1.5; }
+    .img-tag {
+      display:inline-block; margin-top:0.5rem; font-family:'Space Mono',monospace; font-size:0.5rem;
+      letter-spacing:0.15em; padding:0.15rem 0.5rem; background:rgba(255,209,102,0.1);
+      border:1px solid rgba(255,209,102,0.2); color:var(--gold); border-radius:2px; text-transform:uppercase;
+    }
+
+    /* MUSIC */
+    .music-list { display:flex; flex-direction:column; gap:0.6rem; }
+    .music-row {
+      display:flex; align-items:center; gap:1rem; padding:1rem 1.2rem;
+      background:var(--dim); border:1px solid var(--border); border-radius:3px;
+      transition:all 0.2s; cursor:pointer;
+    }
+    .music-row:hover { border-color:var(--purple); background:rgba(155,114,255,0.04); }
+    .music-num { font-family:'Bebas Neue',sans-serif; font-size:1.3rem; color:var(--muted); width:30px; flex-shrink:0; }
+    .music-flag { font-size:1.4rem; flex-shrink:0; }
+    .music-info { flex:1; min-width:0; }
+    .music-title { font-size:0.88rem; color:#fff; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .music-meta { font-family:'Space Mono',monospace; font-size:0.55rem; color:var(--muted); letter-spacing:0.1em; margin-top:0.2rem; }
+    .music-dur { font-family:'Space Mono',monospace; font-size:0.6rem; color:var(--muted); flex-shrink:0; }
+
+    /* GREETINGS */
+    .greetings-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:0.8rem; }
+    .greeting-card {
+      background:var(--dim); border:1px solid var(--border); border-radius:3px; padding:1rem;
+      text-align:center; transition:all 0.2s; cursor:pointer;
+    }
+    .greeting-card:hover { border-color:var(--warn); }
+    .greeting-flag { font-size:2rem; margin-bottom:0.5rem; display:block; }
+    .greeting-lang { font-family:'Bebas Neue',sans-serif; font-size:1rem; letter-spacing:0.08em; color:#fff; margin-bottom:0.3rem; }
+    .greeting-text { font-size:0.7rem; color:var(--accent); font-style:italic; margin-bottom:0.3rem; }
+    .greeting-meaning { font-size:0.65rem; color:var(--muted); }
+
+    /* HUM SECTION */
+    .hum-box {
+      background: radial-gradient(ellipse at center, rgba(0,255,231,0.05) 0%, transparent 70%);
+      border:1px solid rgba(0,255,231,0.15); border-radius:4px; padding:2.5rem; text-align:center;
+      margin-bottom:2rem;
+    }
+    #humCanvas { display:block; margin:0 auto 1.5rem; max-width:100%; }
+    .hum-freq { font-family:'Bebas Neue',sans-serif; font-size:4rem; color:var(--accent); letter-spacing:0.05em; line-height:1; }
+    .hum-unit { font-family:'Space Mono',monospace; font-size:0.65rem; letter-spacing:0.2em; color:var(--muted); margin-top:0.3rem; }
+    .hum-meanings { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:1rem; margin-top:2rem; text-align:left; }
+    .hum-meaning {
+      background:rgba(0,0,0,0.3); border:1px solid var(--border); border-radius:3px; padding:1rem;
+    }
+    .hum-meaning h4 { font-family:'Bebas Neue',sans-serif; font-size:1.1rem; letter-spacing:0.06em; color:var(--accent); margin-bottom:0.4rem; }
+    .hum-meaning p { font-size:0.75rem; color:var(--muted); line-height:1.6; }
+  </style>
+</head>
+<body>
+<canvas class="bg-canvas" id="bg"></canvas>
+<nav class="content-layer">
+  <a href="dashboard.html" class="nav-logo">COSM0S</a>
+  <ul class="nav-links">
+    <li><a href="planets.html">Weight</a></li>
+    <li><a href="scale.html">Scale</a></li>
+    <li><a href="galaxy-map.html">Galaxies</a></li>
+    <li><a href="exoplanets.html">Exoplanets</a></li>
+    <li><a href="fermi.html">Fermi</a></li>
+    <li><a href="alien.html">Aliens</a></li>
+    <li><a href="golden-record.html" class="active">Record</a></li>
+    <li><a href="nebula.html">Nebula</a></li>
+    <li><a href="orrery.html">Orrery</a></li>
+    <li><a href="blackhole.html">Black Hole</a></li>
+  </ul>
+</nav>
+
+<div class="page-wrap content-layer">
+  <div class="record-hero fade-up">
+    <canvas id="recordCanvas" width="220" height="220"></canvas>
+    <div class="hero-text">
+      <div class="section-eyebrow">// NASA VOYAGER MISSION — 1977</div>
+      <h1 class="section-title" style="font-size:clamp(2.5rem,5vw,4.5rem)">THE GOLDEN<br>RECORD</h1>
+      <p style="font-size:0.9rem;color:var(--muted);line-height:1.7;max-width:480px">
+        In 1977, NASA attached a 12-inch gold-plated copper disk to both Voyager probes — a message in a bottle hurled into the cosmic ocean. It contains everything humanity decided to say about itself. No pressure.
+      </p>
+      <div class="launch-data">
+        <div class="launch-row"><span class="lk">Launched</span><span class="lv">September 5, 1977</span></div>
+        <div class="launch-row"><span class="lk">Current Distance</span><span class="lv">23.3 billion km from Earth</span></div>
+        <div class="launch-row"><span class="lk">Speed</span><span class="lv">17 km/s (61,200 km/h)</span></div>
+        <div class="launch-row"><span class="lk">Next Star Encounter</span><span class="lv">AC+79 3888 in ~40,000 yrs</span></div>
+        <div class="launch-row"><span class="lk">Record Duration</span><span class="lv">90 minutes audio + 116 images</span></div>
+        <div class="launch-row"><span class="lk">Curated by</span><span class="lv">Carl Sagan & Ann Druyan</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-nav fade-up-2">
+    <button class="tab-btn active" onclick="switchTab('sounds',this)">🔊 Sounds of Earth</button>
+    <button class="tab-btn" onclick="switchTab('music',this)">🎵 Music</button>
+    <button class="tab-btn" onclick="switchTab('images',this)">🖼️ Images</button>
+    <button class="tab-btn" onclick="switchTab('greetings',this)">🌍 Greetings</button>
+    <button class="tab-btn" onclick="switchTab('hum',this)">〰️ Earth's Hum</button>
+  </div>
+
+  <!-- SOUNDS TAB -->
+  <div class="tab-panel active" id="tab-sounds">
+    <div class="sounds-grid">
+    </div>
+  </div>
+
+  <!-- MUSIC TAB -->
+  <div class="tab-panel" id="tab-music">
+    <div class="music-list" id="musicList"></div>
+  </div>
+
+  <!-- IMAGES TAB -->
+  <div class="tab-panel" id="tab-images">
+    <div class="images-grid" id="imageGrid"></div>
+  </div>
+
+  <!-- GREETINGS TAB -->
+  <div class="tab-panel" id="tab-greetings">
+    <p style="font-family:'Space Mono',monospace;font-size:0.65rem;color:var(--muted);letter-spacing:0.12em;margin-bottom:1.5rem;">
+      // 55 GREETINGS IN DIFFERENT LANGUAGES — FROM AKKADIAN TO ZULU — PLUS A WHALE SONG
+    </p>
+    <div class="greetings-grid" id="greetingsGrid"></div>
+  </div>
+
+  <!-- HUM TAB -->
+  <div class="tab-panel" id="tab-hum">
+    <div class="hum-box">
+      <p style="font-family:'Space Mono',monospace;font-size:0.6rem;letter-spacing:0.2em;color:var(--muted);margin-bottom:1.2rem;text-transform:uppercase;">// Earth's Electromagnetic Hum — Schumann Resonance</p>
+      <canvas id="humCanvas" width="700" height="120"></canvas>
+      <div class="hum-freq">7.83 Hz</div>
+      <div class="hum-unit">FUNDAMENTAL FREQUENCY — THE HEARTBEAT OF EARTH</div>
+    </div>
+    <div class="hum-meanings">
+      <div class="hum-meaning">
+        <h4>What Is It?</h4>
+        <p>The Schumann resonance is an electromagnetic frequency that exists between Earth's surface and the ionosphere. Lightning strikes (50-100 per second globally) keep this cavity resonating. It's the electromagnetic heartbeat of Earth itself.</p>
+      </div>
+      <div class="hum-meaning">
+        <h4>Why Is It On The Record?</h4>
+        <p>Carl Sagan included Earth's electromagnetic signature as a kind of fingerprint — proof of our planet's existence. Any civilization advanced enough to find Voyager could use it to locate Earth by its unique electromagnetic profile.</p>
+      </div>
+      <div class="hum-meaning">
+        <h4>The 7.83 Hz Mystery</h4>
+        <p>This frequency matches the alpha brainwave state of a relaxed human mind (8-12 Hz). Some researchers speculate life evolved in sync with this frequency. Whether cosmic accident or adaptation, we literally resonate with our planet.</p>
+      </div>
+      <div class="hum-meaning">
+        <h4>Changing Over Time</h4>
+        <p>The Schumann resonance has been increasing slightly since the 1950s — from 7.83 Hz to occasional spikes of 8.5 Hz. Climate change and ionospheric shifts are altering Earth's electromagnetic voice. We're changing our own frequency.</p>
+      </div>
+      <div class="hum-meaning">
+        <h4>Harmonics</h4>
+        <p>Beyond 7.83 Hz, the resonance has harmonics at 14.3, 20.8, 27.3 and 33.8 Hz. These overtones create a complex chord — Earth's ambient hum is actually music, just too slow for most instruments.</p>
+      </div>
+      <div class="hum-meaning">
+        <h4>If Aliens Hear It</h4>
+        <p>The inclusion of Earth's EM signature is arguably the most dangerous thing on the record. It's a beacon. Carl Sagan knew this. He decided to say hello anyway. That is either very brave or very reckless. Possibly both.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Spinning golden record
+const rc = document.getElementById('recordCanvas');
+const rctx = rc.getContext('2d');
+let rAngle = 0;
+(function spinRecord() {
+  rAngle += 0.008;
+  rctx.clearRect(0,0,220,220);
+  rctx.save();
+  rctx.translate(110,110);
+  rctx.rotate(rAngle);
+  // Outer ring
+  const outerGrd = rctx.createRadialGradient(0,0,80,0,0,108);
+  outerGrd.addColorStop(0,'#c8a020');
+  outerGrd.addColorStop(0.5,'#f0c840');
+  outerGrd.addColorStop(1,'#8a6010');
+  rctx.beginPath(); rctx.arc(0,0,108,0,Math.PI*2);
+  rctx.fillStyle=outerGrd; rctx.fill();
+  // Grooves
+  for(let r=30;r<100;r+=2.2){
+    rctx.beginPath(); rctx.arc(0,0,r,0,Math.PI*2);
+    rctx.strokeStyle=`rgba(0,0,0,${0.08+Math.sin(r*0.5)*0.04})`; rctx.lineWidth=0.8; rctx.stroke();
+  }
+  // Gold sheen
+  const sheenGrd = rctx.createLinearGradient(-108,-108,108,108);
+  sheenGrd.addColorStop(0,'rgba(255,255,200,0.15)');
+  sheenGrd.addColorStop(0.5,'rgba(255,255,100,0.05)');
+  sheenGrd.addColorStop(1,'rgba(150,100,0,0.1)');
+  rctx.beginPath(); rctx.arc(0,0,108,0,Math.PI*2);
+  rctx.fillStyle=sheenGrd; rctx.fill();
+  // Center hole
+  rctx.beginPath(); rctx.arc(0,0,8,0,Math.PI*2);
+  rctx.fillStyle='#020408'; rctx.fill();
+  rctx.beginPath(); rctx.arc(0,0,10,0,Math.PI*2);
+  rctx.strokeStyle='rgba(255,200,50,0.5)'; rctx.lineWidth=1; rctx.stroke();
+  // Label area
+  rctx.beginPath(); rctx.arc(0,0,28,0,Math.PI*2);
+  rctx.fillStyle='rgba(10,18,30,0.7)'; rctx.fill();
+  rctx.restore();
+  // Outer label
+  rctx.save(); rctx.translate(110,110);
+  rctx.fillStyle='rgba(200,160,30,0.8)';
+  rctx.font='bold 7px Space Mono,monospace';
+  rctx.textAlign='center';
+  rctx.fillText('NASA VOYAGER',0,-14);
+  rctx.fillText('1977',0,0);
+  rctx.fillText('GOLDEN RECORD',0,14);
+  rctx.restore();
+  // Glare
+  rctx.save(); rctx.translate(110,110);
+  const glare = rctx.createRadialGradient(-40,-40,0,-40,-40,60);
+  glare.addColorStop(0,'rgba(255,255,255,0.12)'); glare.addColorStop(1,'transparent');
+  rctx.beginPath(); rctx.arc(0,0,108,0,Math.PI*2);
+  rctx.fillStyle=glare; rctx.fill();
+  rctx.restore();
+  requestAnimationFrame(spinRecord);
+})();
+
+// Schumann resonance hum visualization
+const hc = document.getElementById('humCanvas');
+if(hc) {
+  const hctx = hc.getContext('2d');
+  hc.width = Math.min(700, window.innerWidth - 80);
+  let ht = 0;
+  (function drawHum() {
+    ht += 0.04;
+    hctx.clearRect(0,0,hc.width,hc.height);
+    // BG
+    hctx.fillStyle='rgba(0,5,15,0.3)'; hctx.fillRect(0,0,hc.width,hc.height);
+    // Grid
+    hctx.strokeStyle='rgba(0,255,231,0.06)'; hctx.lineWidth=0.5;
+    for(let i=0;i<8;i++){
+      hctx.beginPath(); hctx.moveTo(0,i*hc.height/8); hctx.lineTo(hc.width,i*hc.height/8); hctx.stroke();
+    }
+    // Main 7.83 Hz wave
+    hctx.beginPath();
+    for(let x=0;x<hc.width;x++){
+      const f = 7.83;
+      const y = hc.height/2 +
+        Math.sin(x*0.08 + ht*f*0.15) * 30 +
+        Math.sin(x*0.15 + ht*14.3*0.1) * 12 +
+        Math.sin(x*0.22 + ht*20.8*0.08) * 6;
+      x===0 ? hctx.moveTo(x,y) : hctx.lineTo(x,y);
+    }
+    const waveGrd = hctx.createLinearGradient(0,0,hc.width,0);
+    waveGrd.addColorStop(0,'transparent');
+    waveGrd.addColorStop(0.1,'rgba(0,255,231,0.8)');
+    waveGrd.addColorStop(0.9,'rgba(0,255,231,0.8)');
+    waveGrd.addColorStop(1,'transparent');
+    hctx.strokeStyle=waveGrd; hctx.lineWidth=2; hctx.stroke();
+    // Harmonics (faint)
+    [14.3,20.8].forEach((freq,i) => {
+      hctx.beginPath();
+      for(let x=0;x<hc.width;x++){
+        const y = hc.height/2 + Math.sin(x*0.1*(i+2) + ht*freq*0.1) * (12-i*4);
+        x===0 ? hctx.moveTo(x,y) : hctx.lineTo(x,y);
+      }
+      hctx.strokeStyle=`rgba(155,114,255,${0.3-i*0.1})`; hctx.lineWidth=1; hctx.stroke();
+    });
+    // Frequency labels
+    hctx.fillStyle='rgba(0,255,231,0.5)'; hctx.font='9px Space Mono,monospace';
+    hctx.textAlign='left';
+    hctx.fillText('7.83 Hz (fundamental)',8,20);
+    hctx.fillStyle='rgba(155,114,255,0.4)';
+    hctx.fillText('14.3 Hz (2nd harmonic)',8,35);
+    hctx.fillText('20.8 Hz (3rd harmonic)',8,50);
+    requestAnimationFrame(drawHum);
+  })();
+}
+
+// Data
+const sounds = [
+  {n:1,icon:'🌬️',title:'Surf, Wind & Thunder',cat:'Natural',color:'#4fc3f7',desc:'Waves crashing on shore. Wind across open plains. The percussion of a thunderstorm. Earth\u2019s oldest music.'},
+  {n:2,icon:'🐦',title:'Birds, Frogs & Crickets',cat:'Wildlife',color:'#06d6a0',desc:'A dawn chorus. Frogs at a pond. Crickets at night. Earth\u2019s constant ambient soundtrack, unchanged for millions of years.'},
+  {n:3,icon:'🐋',title:'Humpback Whale Song',cat:'Wildlife',color:'#0088ff',desc:'Complex, evolving songs that travel thousands of miles. The most haunting sound on the record. Whales were humans\u2019 co-signatories.'},
+  {n:4,icon:'🌧️',title:'Rain, Mud & Fire',cat:'Natural',color:'#9b72ff',desc:'Rain on leaves. Footsteps in mud. A crackling fire. The soundtrack of shelter-seeking life everywhere.'},
+  {n:5,icon:'❤️',title:'Human Heartbeat',cat:'Biology',color:'#ff4d6d',desc:'A single human heart at rest. ~72 BPM. The rhythm underlying everything. Whoever finds this will hear a dead person\u2019s heartbeat.'},
+  {n:6,icon:'👶',title:'Baby\'s First Cry',cat:'Biology',color:'#ffd166',desc:'The first sound a human makes. Included as a universal symbol of new life. Very relatable, probably, to any species that reproduces.'},
+  {n:7,icon:'🌊',title:'Volcanoes & Earthquakes',cat:'Natural',color:'#ff6b35',desc:'Deep geological rumbles. Earth\u2019s interior speaking. The planet\u2019s own voice, ancient and indifferent.'},
+  {n:8,icon:'🚂',title:'Train & Car Sounds',cat:'Civilization',color:'#c8a040',desc:'A steam locomotive. A car engine. Proof that we mastered combustion and motion before we mastered restraint.'},
+  {n:9,icon:'🛩️',title:'Aircraft Takeoff',cat:'Civilization',color:'#aaaaff',desc:'A jet taking off — 50 years from Kitty Hawk to supersonic travel. We are annoyingly fast learners.'},
+  {n:10,icon:'🏥',title:'Doctor & Brainwaves',cat:'Biology',color:'#88ffaa',desc:'EEG brain activity + pulse monitoring. The electrical storm of a thinking human mind. Possibly the most alien thing on the record.'},
+  {n:11,icon:'👋',title:'Greetings in 55 Languages',cat:'Language',color:'#ff9ff3',desc:'From Akkadian (a dead language) to Zulu — every greeting is different, but the intention is the same: we see you.'},
+  {n:12,icon:'🎤',title:'UN Secretary-General',cat:'Civilization',color:'#ffd166',desc:'Kurt Waldheim\u2019s message on behalf of 4 billion humans. Diplomatic, somewhat boring, utterly earnest.'},
+];
+
+const music = [
+  {n:1,flag:'🌍',title:'Brandenburg Concerto No. 2 — 1st Movement',meta:'J.S. Bach · Germany · 1721',dur:'4:40'},
+  {n:2,flag:'🇯🇵',title:'Gagaku — "Restraint"',meta:'Traditional Japanese Court Music · 6th Century',dur:'4:51'},
+  {n:3,flag:'🇸🇳',title:'Senegalese Percussion',meta:'Percussion · West Africa',dur:'2:08'},
+  {n:4,flag:'🌍',title:'Pygmy Girls\' Initiation Song',meta:'Zaire (DRC) · Central Africa',dur:'0:56'},
+  {n:5,flag:'🇦🇺',title:'Morning Star & Devil Bird',meta:'Aboriginal Australian Songs',dur:'1:26'},
+  {n:6,flag:'🇲🇽',title:'El Cascabel',meta:'Lorenzo Barcelata · Mexico · 1940s',dur:'3:14'},
+  {n:7,flag:'🇺🇸',title:'"Johnny B. Goode"',meta:'Chuck Berry · USA · 1958 — Yes, they sent rock and roll to space',dur:'2:38'},
+  {n:8,flag:'🇮🇳',title:'Jaat Kahan Ho — Raga Bhairavi',meta:'Surshri Kesarbai Kerkar · India',dur:'3:30'},
+  {n:9,flag:'🇳🇿',title:'Kinds of Flowers (Melanesia)',meta:'New Guinea',dur:'1:30'},
+  {n:10,flag:'🇯🇵',title:'Tsuru No Sugomori (Cranes in their nest)',meta:'Traditional Japanese Shakuhachi',dur:'4:51'},
+  {n:11,flag:'🌍',title:'Flowing Streams (Liu Shui)',meta:'Guan Pinghu · Ancient Chinese Guqin · 7-string zither',dur:'7:37'},
+  {n:12,flag:'🇮🇳',title:'Chakrulo (Georgian Choir)',meta:'USSR Georgia · Polyphonic Choir',dur:'2:18'},
+  {n:13,flag:'🇵🇪',title:'Panpipes & Drum',meta:'Peruvian Wedding Song · Melodies of Marriage',dur:'0:52'},
+  {n:14,flag:'🇧🇬',title:'"Izlel je Delyo Hagdutin"',meta:'Valya Balkanska · Bulgaria · Folk Song',dur:'4:59'},
+  {n:15,flag:'🇳🇦',title:'Navajo Night Chant',meta:'Native American · Southwest USA',dur:'0:57'},
+  {n:16,flag:'🌍',title:'The Fairie Round',meta:'Anthony Holborne · England · 1599 · Renaissance Music',dur:'1:17'},
+  {n:17,flag:'🌍',title:'Melancholy Blues',meta:'Louis Armstrong · USA · 1927 · Jazz',dur:'3:05'},
+  {n:18,flag:'🇦🇿',title:'Mugam (Azerbaijan)',meta:'Azerbaijani Tar · Eastern Mediterranean',dur:'2:30'},
+  {n:19,flag:'🌍',title:'The Rite of Spring (excerpt)',meta:'Igor Stravinsky · 1913 · Orchestral',dur:'4:35'},
+  {n:20,flag:'🌍',title:'The Well-Tempered Clavier, Prelude 1',meta:'J.S. Bach · 1722 · Harpsichord',dur:'4:48'},
+  {n:21,flag:'🌍',title:'Beethoven\'s Fifth Symphony — 1st Movement',meta:'Beethoven · 1808 · Because of course.',dur:'7:20'},
+  {n:22,flag:'🌍',title:'The Magic Flute — "Hell\'s Bells" Aria',meta:'Mozart · 1791 · Opera',dur:'2:55'},
+  {n:23,flag:'🇧🇬',title:'"Georgie of Izlel" (Rachenitsa)',meta:'Bulgarian Folk Dance',dur:'1:59'},
+  {n:24,flag:'🇺🇸',title:'"Dark Was the Night"',meta:'Blind Willie Johnson · USA · 1927 · Blues Gospel',dur:'3:15'},
+  {n:25,flag:'🌍',title:'Beethoven: String Quartet No. 13 (Cavatina)',meta:'Beethoven · 1825 · The most emotional piece on the record',dur:'6:37'},
+];
+
+const images = [
+  {emoji:'🌌',bg:'linear-gradient(135deg,#020408,#0a1535)',title:'The Calibration Circle',desc:'First image — a mathematical proof that aliens can decode the disk format correctly.',tag:'TECHNICAL'},
+  {emoji:'🧬',bg:'linear-gradient(135deg,#0a2010,#003010)',title:'DNA Structure',desc:'The double helix — our genetic blueprint. The recipe for humanity, encoded in spiral.',tag:'BIOLOGY'},
+  {emoji:'🤰',bg:'linear-gradient(135deg,#1a0a30,#0a0020)',title:'Human Anatomy',desc:'Diagrams of human male and female bodies. We included our blueprints. Bold choice.',tag:'ANATOMY'},
+  {emoji:'👶',bg:'linear-gradient(135deg,#201005,#100300)',title:'Conception & Birth',desc:'Human fertilization to fetal development to birth. The full journey from cell to screaming infant.',tag:'BIOLOGY'},
+  {emoji:'🍽️',bg:'linear-gradient(135deg,#1a1000,#0a0800)',title:'Humans Eating',desc:'A family meal. The universal act of consuming energy to continue existing.',tag:'CULTURE'},
+  {emoji:'🏔️',bg:'linear-gradient(135deg,#080815,#02040a)',title:'The Solar System',desc:'Diagram of our Sun and nine planets (Pluto was still a planet in 1977 — pour one out).',tag:'ASTRONOMY'},
+  {emoji:'🌊',bg:'linear-gradient(135deg,#001525,#000a18)',title:'Earth\'s Oceans',desc:'Aerial view of ocean meeting coastline. The blue that makes us rare in the cosmos.',tag:'PLANET'},
+  {emoji:'🌳',bg:'linear-gradient(135deg,#051505,#010a01)',title:'Forest & Sunlight',desc:'Sunlight filtering through a forest canopy. What photons look like after 8 minutes of travel.',tag:'NATURE'},
+  {emoji:'🦁',bg:'linear-gradient(135deg,#201000,#0a0500)',title:'Animals of Earth',desc:'From insects to elephants — the diversity of Earth\u2019s vertebrates. The family album.',tag:'WILDLIFE'},
+  {emoji:'🌆',bg:'linear-gradient(135deg,#0a0820,#030210)',title:'City at Night',desc:'An aerial view of a lit human city. Proof we tamed fire small enough to fit in a socket.',tag:'CIVILIZATION'},
+  {emoji:'🚀',bg:'linear-gradient(135deg,#08101a,#030810)',title:'Astronaut in Space',desc:'A human in a spacesuit. The aliens will see this and know: we tried to reach them too.',tag:'EXPLORATION'},
+  {emoji:'🎻',bg:'linear-gradient(135deg,#150a00,#0a0500)',title:'Musical Score',desc:'Sheet music from Bach\u2019s Brandenburg Concerto. The aliens will need to invent music to decode this.',tag:'MUSIC'},
+  {emoji:'🏫',bg:'linear-gradient(135deg,#100a00,#060300)',title:'Classroom & Learning',desc:'Children in a school. The universal act of transferring knowledge across generations.',tag:'CULTURE'},
+  {emoji:'🌸',bg:'linear-gradient(135deg,#150010,#080008)',title:'Flowers & Insects',desc:'A bee on a flower. The pollination partnership. Life sustaining life in a tight 300 million-year collaboration.',tag:'NATURE'},
+  {emoji:'🏗️',bg:'linear-gradient(135deg,#0a0a0a,#050505)',title:'Construction & Industry',desc:'Human hands building things. Cranes, factories. We are a species that cannot stop making objects.',tag:'CIVILIZATION'},
+  {emoji:'👁️',bg:'linear-gradient(135deg,#001010,#000808)',title:'The Human Eye',desc:'A close-up of a human eye. Staring back. Whoever opens this record will be stared at.',tag:'ANATOMY'},
+];
+
+const greetings = [
+  {flag:'🇸🇺',lang:'Sumerian',text:'"May all be well"',meaning:'Ancient Mesopotamia — one of humanity\'s first written languages'},
+  {flag:'🇨🇳',lang:'Mandarin',text:'"Hope everyone\'s well"',meaning:'Spoken by 1.2 billion humans'},
+  {flag:'🇮🇳',lang:'Hindi',text:'"Greetings from a human of the Earth"',meaning:'One of the world\'s most spoken languages'},
+  {flag:'🌍',lang:'Akkadian',text:'"Friends, how are you all?"',meaning:'Dead language of Mesopotamia — 3000 BCE'},
+  {flag:'🇺🇦',lang:'Ukrainian',text:'"We greet you, whoever you are"',meaning:'Eastern European Slavic'},
+  {flag:'🇸🇦',lang:'Arabic',text:'"Greetings to our friends in the stars"',meaning:'Written right-to-left since antiquity'},
+  {flag:'🇫🇷',lang:'French',text:'"Hello everyone"',meaning:'Language of diplomacy for 400 years'},
+  {flag:'🇩🇪',lang:'German',text:'"Greetings to you, wherever you come from"',meaning:'Spoken by 100M+ people'},
+  {flag:'🇯🇵',lang:'Japanese',text:'"Hello. How are you?"',meaning:'Written in three scripts simultaneously'},
+  {flag:'🇰🇷',lang:'Korean',text:'"How are you?"',meaning:'Possibly the most logical writing system ever designed'},
+  {flag:'🇷🇺',lang:'Russian',text:'"Hello!"',meaning:'Spoken across 11 time zones'},
+  {flag:'🇬🇷',lang:'Greek',text:'"Hello, how are you? Are you healthy?"',meaning:'Language of philosophy, mathematics, democracy'},
+  {flag:'🇪🇸',lang:'Spanish',text:'"Hello and farewell, friends"',meaning:'Second most spoken language by native speakers'},
+  {flag:'🇳🇬',lang:'Yoruba',text:'"Greetings, friends"',meaning:'Spoken by 50M+ in West Africa'},
+  {flag:'🇹🇿',lang:'Swahili',text:'"Hello, are you well?"',meaning:'Lingua franca of East Africa'},
+  {flag:'🇵🇹',lang:'Portuguese',text:'"Greetings to all!"',meaning:'From Europe to Brazil to Mozambique'},
+  {flag:'🇮🇩',lang:'Indonesian',text:'"Good night, ladies and gentlemen"',meaning:'Unifies 300 ethnic groups, 700 languages'},
+  {flag:'🇹🇷',lang:'Turkish',text:'"Dear Turkish-speaking friends, hello!"',meaning:'Bridges Europe and Asia'},
+  {flag:'🌍',lang:'Latin',text:'"Greetings to you, who reads this"',meaning:'Dead language that built Western civilization'},
+  {flag:'🇮🇱',lang:'Hebrew',text:'"Peace"',meaning:'Ancient language revived in the 20th century'},
+];
+
+// Build sounds
+document.querySelector('#tab-sounds .sounds-grid').innerHTML = sounds.map(s => `
+  <div class="sound-card" style="--sc:${s.color}" onclick="this.classList.toggle('playing')">
+    <span class="sound-num">${String(s.n).padStart(2,'0')}</span>
+    <div class="sound-icon">${s.icon}</div>
+    <div class="sound-title">${s.title}</div>
+    <div class="sound-cat">${s.cat}</div>
+    <div class="sound-desc">${s.desc}</div>
+    <div class="sound-wave">
+      ${Array.from({length:12},(_,i)=>`<div class="wave-bar" style="--h:${8+Math.random()*16}px;animation-delay:${i*0.1}s"></div>`).join('')}
+    </div>
+  </div>
+`).join('');
+
+// Build music
+document.getElementById('musicList').innerHTML = music.map(m => `
+  <div class="music-row">
+    <div class="music-num">${m.n}</div>
+    <div class="music-flag">${m.flag}</div>
+    <div class="music-info">
+      <div class="music-title">${m.title}</div>
+      <div class="music-meta">${m.meta}</div>
+    </div>
+    <div class="music-dur">${m.dur}</div>
+  </div>
+`).join('');
+
+// Build images
+document.getElementById('imageGrid').innerHTML = images.map(img => `
+  <div class="img-card">
+    <div class="img-visual" style="background:${img.bg}">${img.emoji}</div>
+    <div class="img-info">
+      <div class="img-title">${img.title}</div>
+      <div class="img-desc">${img.desc}</div>
+      <span class="img-tag">${img.tag}</span>
+    </div>
+  </div>
+`).join('');
+
+// Build greetings
+document.getElementById('greetingsGrid').innerHTML = greetings.map(g => `
+  <div class="greeting-card">
+    <span class="greeting-flag">${g.flag}</span>
+    <div class="greeting-lang">${g.lang}</div>
+    <div class="greeting-text">"${g.text}"</div>
+    <div class="greeting-meaning">${g.meaning}</div>
+  </div>
+`).join('');
+
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// BG stars
+const bgC=document.getElementById('bg'),bgX=bgC.getContext('2d');let bst=[];
+function brsz(){bgC.width=innerWidth;bgC.height=innerHeight;bst=Array.from({length:160},()=>({x:Math.random()*bgC.width,y:Math.random()*bgC.height,r:Math.random()*1.2,a:Math.random(),s:Math.random()*0.003+0.001}));}
+brsz();window.addEventListener('resize',brsz);
+(function bd(){bgX.clearRect(0,0,bgC.width,bgC.height);bst.forEach(s=>{s.a+=s.s;bgX.beginPath();bgX.arc(s.x,s.y,s.r,0,Math.PI*2);bgX.fillStyle=`rgba(180,210,255,${(Math.sin(s.a)+1)/2*0.6})`;bgX.fill();});requestAnimationFrame(bd);})();
+</script>
+</body>
+</html>

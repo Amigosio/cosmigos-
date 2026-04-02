@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>COSM0S — Black Hole</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    body { overflow: hidden; background: #000; }
+    nav { background: rgba(0,0,0,0.7) !important; border-bottom-color: rgba(255,255,255,0.05) !important; }
+    #bhCanvas {
+      position: fixed; inset: 0; z-index: 1;
+      display: block; width: 100%; height: 100%;
+    }
+    .bh-ui {
+      position: fixed; z-index: 10;
+      bottom: 1.5rem; left: 1.5rem; right: 1.5rem;
+      display: flex; justify-content: space-between; align-items: flex-end;
+      pointer-events: none;
+    }
+    .bh-info {
+      background: rgba(0,0,0,0.75);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 3px; padding: 1.2rem 1.5rem;
+      backdrop-filter: blur(20px);
+      max-width: 360px;
+      pointer-events: all;
+    }
+    .bh-name {
+      font-family: 'Bebas Neue', sans-serif; font-size: 1.8rem;
+      letter-spacing: 0.1em; color: #fff; line-height: 1; margin-bottom: 0.2rem;
+    }
+    .bh-class {
+      font-family: 'Space Mono', monospace; font-size: 0.55rem;
+      letter-spacing: 0.2em; color: rgba(255,140,60,0.8); text-transform: uppercase; margin-bottom: 0.8rem;
+    }
+    .bh-stats { display: flex; flex-direction: column; gap: 0.25rem; }
+    .bh-stat {
+      display: flex; justify-content: space-between;
+      font-family: 'Space Mono', monospace; font-size: 0.55rem;
+      padding: 0.2rem 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .bh-stat .k { color: rgba(255,255,255,0.3); text-transform: uppercase; }
+    .bh-stat .v { color: rgba(255,255,255,0.8); }
+
+    .bh-controls {
+      display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end;
+      pointer-events: all;
+    }
+    .bh-ctrl-row { display: flex; gap: 0.4rem; }
+    .bh-btn {
+      font-family: 'Space Mono', monospace; font-size: 0.55rem; letter-spacing: 0.12em; text-transform: uppercase;
+      padding: 0.4rem 0.8rem; background: rgba(0,0,0,0.7); border: 1px solid rgba(255,255,255,0.12);
+      color: rgba(255,255,255,0.5); cursor: pointer; border-radius: 2px; transition: all 0.2s;
+      backdrop-filter: blur(10px);
+    }
+    .bh-btn:hover { color: rgba(255,140,60,0.9); border-color: rgba(255,140,60,0.3); }
+    .bh-btn.active { color: rgba(255,140,60,1); border-color: rgba(255,140,60,0.5); background: rgba(255,100,20,0.1); }
+
+    .event-horizon-label {
+      position: fixed; z-index: 10; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: 'Space Mono', monospace; font-size: 0.5rem; letter-spacing: 0.2em;
+      color: rgba(255,255,255,0); text-transform: uppercase; pointer-events: none;
+      text-align: center;
+    }
+
+    .facts-overlay {
+      position: fixed; z-index: 10; top: 5rem; right: 1.5rem;
+      background: rgba(0,0,0,0.75); border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 3px; padding: 1rem 1.2rem; max-width: 240px;
+      backdrop-filter: blur(20px);
+    }
+    .fact-title { font-family: 'Space Mono', monospace; font-size: 0.52rem; letter-spacing: 0.2em; color: rgba(255,140,60,0.7); text-transform: uppercase; margin-bottom: 0.8rem; }
+    .fact-item { font-size: 0.72rem; color: rgba(255,255,255,0.45); line-height: 1.6; margin-bottom: 0.6rem; border-left: 2px solid rgba(255,100,20,0.3); padding-left: 0.6rem; }
+  </style>
+</head>
+<body>
+<nav style="position:fixed;z-index:100">
+  <a href="dashboard.html" class="nav-logo">COSM0S</a>
+  <ul class="nav-links">
+    <li><a href="planets.html">Weight</a></li>
+    <li><a href="scale.html">Scale</a></li>
+    <li><a href="galaxy-map.html">Galaxies</a></li>
+    <li><a href="exoplanets.html">Exoplanets</a></li>
+    <li><a href="fermi.html">Fermi</a></li>
+    <li><a href="alien.html">Aliens</a></li>
+    <li><a href="golden-record.html">Record</a></li>
+    <li><a href="nebula.html">Nebula</a></li>
+    <li><a href="orrery.html">Orrery</a></li>
+    <li><a href="blackhole.html" class="active">Black Hole</a></li>
+  </ul>
+</nav>
+
+<canvas id="bhCanvas"></canvas>
+
+<div class="event-horizon-label" id="ehLabel">EVENT HORIZON</div>
+
+<div class="facts-overlay">
+  <div class="fact-title">// M87* Analogue</div>
+  <div class="fact-item">The shadow you see is the photon sphere — where light orbits the singularity before either escaping or being consumed.</div>
+  <div class="fact-item">The bright side of the accretion disk appears brighter due to Doppler boosting — matter rushing toward you glows hotter.</div>
+  <div class="fact-item">Time near the event horizon runs slower. One hour at the photon sphere ≈ thousands of years on Earth.</div>
+  <div class="fact-item">The first black hole image (M87*) was taken in 2019. It took years of computation and a planet-sized telescope.</div>
+</div>
+
+<div class="bh-ui">
+  <div class="bh-info">
+    <div class="bh-name" id="bhName">EREBUS-1</div>
+    <div class="bh-class">SUPERMASSIVE · KERR BLACK HOLE</div>
+    <div class="bh-stats">
+      <div class="bh-stat"><span class="k">Mass</span><span class="v" id="bhMass">6.5 × 10⁹ M☉</span></div>
+      <div class="bh-stat"><span class="k">Schwarzschild Radius</span><span class="v" id="bhRadius">~19.2 billion km</span></div>
+      <div class="bh-stat"><span class="k">Event Horizon</span><span class="v">38.4 billion km diameter</span></div>
+      <div class="bh-stat"><span class="k">Disk Temperature</span><span class="v" id="bhTemp">~10⁷ K (inner)</span></div>
+      <div class="bh-stat"><span class="k">Spin Parameter</span><span class="v" id="bhSpin">a = 0.998 (near maximal)</span></div>
+      <div class="bh-stat"><span class="k">Hawking Radiation</span><span class="v">~10⁻¹⁷ K (undetectable)</span></div>
+      <div class="bh-stat"><span class="k">Escape Velocity</span><span class="v">299,792,458 m/s (c)</span></div>
+    </div>
+  </div>
+
+  <div class="bh-controls">
+    <div class="bh-ctrl-row">
+      <button class="bh-btn active" onclick="setMode('interstellar',this)">Interstellar</button>
+      <button class="bh-btn" onclick="setMode('blueshift',this)">Blueshift</button>
+      <button class="bh-btn" onclick="setMode('xray',this)">X-Ray</button>
+      <button class="bh-btn" onclick="setMode('hawking',this)">Hawking</button>
+    </div>
+    <div class="bh-ctrl-row">
+      <button class="bh-btn active" id="jetBtn" onclick="toggleJet()">Relativistic Jet ON</button>
+      <button class="bh-btn active" id="lensBtn" onclick="toggleLens()">Gravitational Lensing ON</button>
+    </div>
+    <div class="bh-ctrl-row">
+      <button class="bh-btn" onclick="spinFaster()">⚡ Spin Faster</button>
+      <button class="bh-btn" onclick="spinSlower()">🌀 Spin Slower</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('bhCanvas');
+const ctx = canvas.getContext('2d');
+
+function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+resize(); window.addEventListener('resize', resize);
+
+let t = 0;
+let spinSpeed = 1.0;
+let mode = 'interstellar';
+let showJet = true;
+let showLens = true;
+
+function setMode(m, btn) {
+  mode = m;
+  document.querySelectorAll('.bh-btn').forEach(b => { if(['interstellar','blueshift','xray','hawking'].includes(b.textContent.toLowerCase())||b.onclick?.toString().includes('setMode')) {} });
+  document.querySelectorAll('.bh-btn').forEach(b => {
+    if(b.onclick && b.onclick.toString().includes('setMode')) b.classList.toggle('active', b.onclick.toString().includes(`'${m}'`));
+  });
+}
+function toggleJet() { showJet=!showJet; document.getElementById('jetBtn').classList.toggle('active',showJet); document.getElementById('jetBtn').textContent=`Relativistic Jet ${showJet?'ON':'OFF'}`; }
+function toggleLens() { showLens=!showLens; document.getElementById('lensBtn').classList.toggle('active',showLens); document.getElementById('lensBtn').textContent=`Gravitational Lensing ${showLens?'ON':'OFF'}`; }
+function spinFaster() { spinSpeed = Math.min(4, spinSpeed+0.5); }
+function spinSlower() { spinSpeed = Math.max(0.1, spinSpeed-0.3); }
+
+// Disk color palettes per mode
+const modes = {
+  interstellar: { inner:'#ffffff', mid:'#ffaa44', outer:'#ff6600', far:'#cc2200', jet:'#aaccff' },
+  blueshift:    { inner:'#ffffff', mid:'#aaddff', outer:'#4488ff', far:'#0022cc', jet:'#ffffff' },
+  xray:         { inner:'#ffffff', mid:'#aaffaa', outer:'#00ff88', far:'#004433', jet:'#00ffaa' },
+  hawking:      { inner:'#ffaaff', mid:'#cc44cc', outer:'#660066', far:'#220022', jet:'#ff88ff' },
+};
+
+// Lensed star positions (fixed background)
+const bgStars = Array.from({length:300}, () => ({
+  x: Math.random(), y: Math.random(),
+  r: Math.random()*1.4+0.3,
+  brightness: Math.random(),
+  color: ['#ffffff','#aaddff','#ffeecc','#ffddaa','#ccddff'][Math.floor(Math.random()*5)]
+}));
+
+// Accretion disk particles
+const diskParticles = Array.from({length:800}, () => {
+  const r = 0.18 + Math.pow(Math.random(),0.7)*0.32;
+  const a = Math.random()*Math.PI*2;
+  const z = (Math.random()-0.5)*0.04;
+  return { r, a, z, brightness: Math.random(), size: Math.random()*2+0.5 };
+});
+
+function drawFrame() {
+  t += 0.012 * spinSpeed;
+  const W = canvas.width, H = canvas.height;
+  const cx = W/2, cy = H/2;
+  const BHR = Math.min(W,H) * 0.12; // event horizon visual radius
+  const DISK_MAX = BHR * 3.5;
+
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(0,0,W,H);
+
+  const pal = modes[mode];
+
+  // === BACKGROUND STARS (with lensing distortion) ===
+  bgStars.forEach(s => {
+    let sx = s.x*W, sy = s.y*H;
+    if(showLens) {
+      // Gravitational lensing: deflect stars near the black hole
+      const dx = sx-cx, dy = sy-cy;
+      const dist = Math.sqrt(dx*dx+dy*dy);
+      const lensR = BHR*3.5;
+      if(dist < lensR && dist > BHR*1.1) {
+        const lensStrength = Math.pow(1-dist/lensR,2)*BHR*2;
+        const angle = Math.atan2(dy,dx);
+        sx -= Math.cos(angle)*lensStrength;
+        sy -= Math.sin(angle)*lensStrength;
+      }
+      if(dist < BHR*1.2) return; // hidden behind BH
+    }
+    const alpha = 0.2 + s.brightness*0.6;
+    ctx.beginPath(); ctx.arc(sx,sy,s.r,0,Math.PI*2);
+    ctx.fillStyle = s.color.replace(')',`,${alpha})`).replace('rgb(','rgba(').replace('#','');
+    // Simple approach:
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = s.color; ctx.fill();
+    ctx.globalAlpha = 1;
+  });
+
+  // === ACCRETION DISK (BEHIND black hole) ===
+  // Render back half first
+  drawDiskHalf(cx, cy, BHR, DISK_MAX, pal, 'back');
+
+  // === GRAVITATIONAL LENSING RING (Einstein Ring) ===
+  if(showLens) {
+    for(let pass=0;pass<3;pass++){
+      const ringR = BHR*(1.3+pass*0.25);
+      const ringWidth = BHR*(0.15-pass*0.03);
+      const lensGrd = ctx.createRadialGradient(cx,cy,ringR-ringWidth,cx,cy,ringR+ringWidth);
+      lensGrd.addColorStop(0,'transparent');
+      lensGrd.addColorStop(0.3,pal.inner+(pass===0?'60':'30'));
+      lensGrd.addColorStop(0.5,pal.mid+(pass===0?'80':'40'));
+      lensGrd.addColorStop(0.7,pal.inner+(pass===0?'60':'30'));
+      lensGrd.addColorStop(1,'transparent');
+      ctx.beginPath(); ctx.arc(cx,cy,ringR+ringWidth,0,Math.PI*2);
+      ctx.fillStyle=lensGrd; ctx.fill();
+    }
+
+    // Photon sphere ring
+    const pR = BHR*1.5;
+    ctx.beginPath(); ctx.arc(cx,cy,pR,0,Math.PI*2);
+    ctx.strokeStyle='rgba(255,180,80,0.15)'; ctx.lineWidth=1; ctx.stroke();
+  }
+
+  // === BLACK HOLE SHADOW ===
+  // Outer glow
+  for(let g=4;g>0;g--){
+    const gR = BHR*(1+g*0.3);
+    const gGrd = ctx.createRadialGradient(cx,cy,BHR*0.8,cx,cy,gR);
+    gGrd.addColorStop(0,'rgba(0,0,0,0.95)');
+    gGrd.addColorStop(0.6,'rgba(0,0,0,0.6)');
+    gGrd.addColorStop(1,'transparent');
+    ctx.beginPath(); ctx.arc(cx,cy,gR,0,Math.PI*2);
+    ctx.fillStyle=gGrd; ctx.fill();
+  }
+  // The void itself
+  const voidGrd = ctx.createRadialGradient(cx,cy,0,cx,cy,BHR);
+  voidGrd.addColorStop(0,'#000000');
+  voidGrd.addColorStop(0.7,'#000000');
+  voidGrd.addColorStop(0.9,'rgba(0,0,0,0.95)');
+  voidGrd.addColorStop(1,'rgba(0,0,0,0.5)');
+  ctx.beginPath(); ctx.arc(cx,cy,BHR,0,Math.PI*2);
+  ctx.fillStyle=voidGrd; ctx.fill();
+
+  // === RELATIVISTIC JET ===
+  if(showJet) {
+    for(let jet=0;jet<2;jet++){
+      const jDir = jet===0?-1:1;
+      const jLen = H*0.6;
+      const jGrd = ctx.createLinearGradient(cx,cy+jDir*BHR,cx,cy+jDir*jLen);
+      jGrd.addColorStop(0,pal.jet+'cc');
+      jGrd.addColorStop(0.1,pal.jet+'88');
+      jGrd.addColorStop(0.5,pal.jet+'22');
+      jGrd.addColorStop(1,'transparent');
+      ctx.save();
+      ctx.translate(cx,cy);
+      // Jet beam
+      const jWidth = BHR*0.25;
+      ctx.beginPath();
+      ctx.moveTo(-jWidth*0.1, jDir*BHR);
+      ctx.quadraticCurveTo(-jWidth, jDir*jLen*0.5, -jWidth*(0.3+Math.sin(t*0.1)*0.1), jDir*jLen);
+      ctx.lineTo(jWidth*(0.3+Math.sin(t*0.1+1)*0.1), jDir*jLen);
+      ctx.quadraticCurveTo(jWidth, jDir*jLen*0.5, jWidth*0.1, jDir*BHR);
+      ctx.closePath();
+      ctx.fillStyle=jGrd; ctx.fill();
+
+      // Jet knots (moving plasma blobs)
+      for(let k=0;k<6;k++){
+        const kFrac = ((t*0.4*spinSpeed+k/6) % 1);
+        const ky = jDir*(BHR + kFrac*jLen);
+        const kr = (1-kFrac)*jWidth*0.6;
+        if(kr < 0.5) continue;
+        const kGrd = ctx.createRadialGradient(0,ky,0,0,ky,kr);
+        kGrd.addColorStop(0,pal.jet+'ff'); kGrd.addColorStop(1,'transparent');
+        ctx.beginPath(); ctx.arc(0,ky,kr,0,Math.PI*2); ctx.fillStyle=kGrd; ctx.fill();
+      }
+      ctx.restore();
+    }
+  }
+
+  // === ACCRETION DISK (FRONT half) ===
+  drawDiskHalf(cx, cy, BHR, DISK_MAX, pal, 'front');
+
+  // === DISK GLOW ===
+  const glowGrd = ctx.createRadialGradient(cx,cy+BHR*0.2,BHR*0.9,cx,cy,DISK_MAX);
+  glowGrd.addColorStop(0,pal.mid+'44');
+  glowGrd.addColorStop(0.3,pal.outer+'22');
+  glowGrd.addColorStop(1,'transparent');
+  ctx.globalCompositeOperation='screen';
+  ctx.beginPath(); ctx.arc(cx,cy,DISK_MAX,0,Math.PI*2);
+  ctx.fillStyle=glowGrd; ctx.fill();
+  ctx.globalCompositeOperation='source-over';
+
+  // === INNER HOT ACCRETION (ISCO glow) ===
+  const iscoR = BHR*1.1;
+  const iscoGrd = ctx.createRadialGradient(cx,cy,iscoR*0.8,cx,cy,iscoR*1.4);
+  iscoGrd.addColorStop(0,pal.inner+'60');
+  iscoGrd.addColorStop(1,'transparent');
+  ctx.beginPath(); ctx.arc(cx,cy,iscoR*1.4,0,Math.PI*2);
+  ctx.fillStyle=iscoGrd; ctx.fill();
+
+  // === Labels ===
+  ctx.fillStyle='rgba(255,255,255,0.08)';
+  ctx.font='9px Space Mono,monospace'; ctx.textAlign='center';
+  if(BHR > 60) ctx.fillText('EVENT HORIZON', cx, cy+BHR+20);
+
+  requestAnimationFrame(drawFrame);
+}
+
+function drawDiskHalf(cx, cy, BHR, DISK_MAX, pal, half) {
+  const W = canvas.width, H = canvas.height;
+
+  // Disk as ellipse with varying brightness
+  // The disk is tilted ~15° from edge-on
+  const tilt = 0.25; // vertical squish factor (1=face-on, 0=edge-on)
+  const diskAngle = Math.PI*0.08; // small inclination
+
+  const startA = half==='back' ? Math.PI : 0;
+  const endA   = half==='back' ? Math.PI*2 : Math.PI;
+
+  // Draw concentric elliptical rings
+  const rings = 60;
+  for(let i=rings;i>=0;i--){
+    const rFrac = i/rings;
+    const rr = BHR + (DISK_MAX-BHR)*rFrac;
+    const rotAngle = t * spinSpeed * (1-rFrac*0.7) * (half==='back'?1:1);
+
+    // Temperature gradient: inner is white-hot, outer is cool red
+    let col;
+    if(rFrac < 0.1)      col = pal.inner;
+    else if(rFrac < 0.3) col = lerpColor(pal.inner, pal.mid, (rFrac-0.1)/0.2);
+    else if(rFrac < 0.6) col = lerpColor(pal.mid, pal.outer, (rFrac-0.3)/0.3);
+    else                 col = lerpColor(pal.outer, pal.far, (rFrac-0.6)/0.4);
+
+    // Doppler brightening: left side (approaching) is brighter
+    const brightenLeft = half==='front' ? 1.0 : 0.4;
+    const brightenRight = half==='front' ? 0.3 : 0.5;
+
+    // Draw left (approaching) bright arc
+    ctx.save();
+    ctx.translate(cx,cy);
+    ctx.scale(1, tilt);
+    ctx.beginPath();
+    ctx.ellipse(0,0,rr,rr,0, startA, endA);
+    const diskW = Math.max(1, (DISK_MAX-BHR)/rings * 1.5);
+
+    // Gradient along arc for brightness variation
+    const alpha = (1-rFrac)*(half==='front'?0.9:0.5) * (rFrac>0.05?1:rFrac/0.05);
+    ctx.strokeStyle = col + Math.round(alpha*255).toString(16).padStart(2,'0');
+    ctx.lineWidth = diskW + (1-rFrac)*2;
+    ctx.stroke();
+    ctx.restore();
+
+    // Doppler boost: render bright left arc separately for front half
+    if(half==='front' && rFrac < 0.7) {
+      ctx.save();
+      ctx.translate(cx,cy);
+      ctx.scale(1,tilt);
+      ctx.beginPath();
+      ctx.ellipse(0,0,rr,rr,0, Math.PI*0.6, Math.PI*1.3);
+      ctx.strokeStyle = pal.inner + Math.round(alpha*0.5*255).toString(16).padStart(2,'0');
+      ctx.lineWidth = diskW*0.5;
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  // Orbiting hot spots
+  const hotspots = 3;
+  for(let h=0;h<hotspots;h++){
+    const hAngle = t*spinSpeed*1.5 + (h/hotspots)*Math.PI*2;
+    const hR = BHR*1.3 + h*BHR*0.3;
+    const hx = Math.cos(hAngle)*hR;
+    const hy = Math.sin(hAngle)*hR*tilt;
+
+    // Only draw in correct half
+    const isBack = hx < 0;
+    if((half==='back'&&!isBack)||(half==='front'&&isBack)) continue;
+
+    const hGrd = ctx.createRadialGradient(cx+hx,cy+hy,0,cx+hx,cy+hy,BHR*0.15);
+    hGrd.addColorStop(0,'rgba(255,255,255,0.9)');
+    hGrd.addColorStop(0.3,pal.inner+'cc');
+    hGrd.addColorStop(1,'transparent');
+    ctx.beginPath(); ctx.arc(cx+hx,cy+hy,BHR*0.15,0,Math.PI*2);
+    ctx.fillStyle=hGrd; ctx.fill();
+  }
+}
+
+function lerpColor(c1, c2, t) {
+  const r1=parseInt(c1.slice(1,3),16), g1=parseInt(c1.slice(3,5),16), b1=parseInt(c1.slice(5,7),16);
+  const r2=parseInt(c2.slice(1,3),16), g2=parseInt(c2.slice(3,5),16), b2=parseInt(c2.slice(5,7),16);
+  const r=Math.round(r1+(r2-r1)*t), g=Math.round(g1+(g2-g1)*t), b=Math.round(b1+(b2-b1)*t);
+  return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
+}
+
+requestAnimationFrame(drawFrame);
+</script>
+</body>
+</html>
